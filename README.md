@@ -16,7 +16,7 @@ The proxy holds all API keys and enforces an operations allowlist.
 ```
 VPS host
 ├── User: openclaw   → runs /opt/openclaw-src  (docker compose)
-└── User: mcpproxy   → runs /opt/mcp-proxy     (docker compose, owns config)
+└── User: crusty     → runs /opt/mcp-proxy     (docker compose, owns config)
 
 OpenClaw container
     │  MCP/SSE  ·  http://crusty-proxy:3000/sse
@@ -40,24 +40,28 @@ crusty-proxy container  (UID 2000, read-only rootfs)
 Run as root. This user owns the proxy files and runs its Docker Compose — completely separate from the user running OpenClaw.
 
 ```bash
-useradd --system --shell /usr/sbin/nologin --create-home --home-dir /opt/mcp-proxy mcpproxy
-# Allow mcpproxy to manage Docker without sudo
-usermod -aG docker mcpproxy
+useradd --system --shell /usr/sbin/nologin --create-home --home-dir /opt/mcp-proxy crusty
+# Allow crusty to manage Docker without sudo
+usermod -aG docker crusty
 ```
 
-> **Why a separate user?** If OpenClaw is ever compromised, the attacker gains the OpenClaw user's privileges — not `mcpproxy`'s. The config files in `/opt/mcp-proxy/config/` (including API keys) are owned by `mcpproxy` and unreadable to the OpenClaw user.
+> **Why a separate user?** If OpenClaw is ever compromised, the attacker gains the OpenClaw user's privileges — not `crusty`'s. The config files in `/opt/mcp-proxy/config/` (including API keys) are owned by `crusty` and unreadable to the OpenClaw user.
 
 ### 2. Get the config files
 
-The Docker image is published to GHCR — no build step needed on the VPS. You only need the `docker-compose.yml` and the config templates:
+The Docker image is published to GHCR — no build step needed on the VPS. Download the three files you need:
 
 ```bash
-# As root or your deploy user:
-git clone https://github.com/stefanhoth/crusty-proxy.git /opt/mcp-proxy
-chown -R mcpproxy:mcpproxy /opt/mcp-proxy
-```
+# As root:
+mkdir -p /opt/mcp-proxy/config
 
-> Alternatively, download just `docker-compose.yml` and `config/` manually — `docker compose up` will pull the image automatically.
+BASE=https://raw.githubusercontent.com/stefanhoth/crusty-proxy/main
+curl -fsSL $BASE/docker-compose.yml        -o /opt/mcp-proxy/docker-compose.yml
+curl -fsSL $BASE/config/keys.example.json  -o /opt/mcp-proxy/config/keys.example.json
+curl -fsSL $BASE/config/allowlist.json     -o /opt/mcp-proxy/config/allowlist.json
+
+chown -R crusty:crusty /opt/mcp-proxy
+```
 
 ### 3. Create the shared Docker network
 
@@ -68,12 +72,12 @@ docker network create openclaw-internal
 ### 4. Create and secure the keys file
 
 ```bash
-# Switch to the mcpproxy user:
-sudo -u mcpproxy bash
+# Switch to the crusty user:
+sudo -u crusty bash
 
 cd /opt/mcp-proxy
 cp config/keys.example.json config/keys.json
-chmod 600 config/keys.json        # readable only by mcpproxy
+chmod 600 config/keys.json        # readable only by crusty
 nano config/keys.json             # fill in your credentials
 exit
 ```
@@ -81,8 +85,8 @@ exit
 ### 5. Start
 
 ```bash
-sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml up -d
-sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml logs -f
+sudo -u crusty docker compose -f /opt/mcp-proxy/docker-compose.yml up -d
+sudo -u crusty docker compose -f /opt/mcp-proxy/docker-compose.yml logs -f
 ```
 
 The image is pulled automatically from `ghcr.io/stefanhoth/crusty-proxy:latest`. To build from source instead, see the comment in `docker-compose.yml`.
@@ -90,12 +94,12 @@ The image is pulled automatically from `ghcr.io/stefanhoth/crusty-proxy:latest`.
 ### 6. Verify health
 
 ```bash
-# From the VPS host:
-docker exec crusty-proxy wget -qO- http://localhost:3000/health
+# Check container health status:
+docker inspect crusty-proxy --format='{{.State.Health.Status}}'
 
-# Or from inside the openclaw-internal network:
-docker run --rm --network openclaw-internal alpine \
-  wget -qO- http://crusty-proxy:3000/health
+# Or read the full health response:
+docker exec crusty-proxy bun --eval \
+  "fetch('http://localhost:3000/health').then(r=>r.json()).then(j=>console.log(JSON.stringify(j,null,2)))"
 ```
 
 ---
@@ -195,8 +199,8 @@ mcporter list crusty-proxy
 ## Modifying the allowlist
 
 ```bash
-sudo -u mcpproxy nano /opt/mcp-proxy/config/allowlist.json
-sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml restart mcp-proxy
+sudo -u crusty nano /opt/mcp-proxy/config/allowlist.json
+sudo -u crusty docker compose -f /opt/mcp-proxy/docker-compose.yml restart mcp-proxy
 ```
 
 The file is bind-mounted read-only inside the container. Set `"enabled": false` to disable a service entirely.
@@ -239,11 +243,11 @@ Deliberately **not implemented**: delete calendar events, delete emails, delete 
 ## Local development
 
 ```bash
-npm install
+bun install
 cp config/keys.example.json config/keys.json
 # fill in keys.json
 
 export KEYS_PATH=./config/keys.json
 export ALLOWLIST_PATH=./config/allowlist.json
-npm run dev
+bun run dev
 ```

@@ -6,8 +6,8 @@ RUN go install github.com/steipete/goplaces/cmd/goplaces@v0.3.0
 FROM oven/bun:1-alpine AS runtime
 
 # Non-root, non-1000 user for the proxy process
-RUN addgroup -g 2000 mcpproxy && \
-    adduser -u 2000 -G mcpproxy -s /sbin/nologin -D mcpproxy
+RUN addgroup -g 2000 crusty && \
+    adduser -u 2000 -G crusty -s /sbin/nologin -D crusty
 
 WORKDIR /app
 
@@ -23,10 +23,10 @@ COPY --from=goplaces-builder /go/bin/goplaces /usr/local/bin/goplaces
 
 # Config dir — actual files are bind-mounted read-only at runtime
 RUN mkdir -p /etc/mcp-proxy && \
-    chown -R mcpproxy:mcpproxy /etc/mcp-proxy && \
-    chown -R mcpproxy:mcpproxy /app
+    chown -R crusty:crusty /etc/mcp-proxy && \
+    chown -R crusty:crusty /app
 
-USER mcpproxy
+USER crusty
 
 EXPOSE 3000
 
