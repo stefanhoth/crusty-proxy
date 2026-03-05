@@ -1,0 +1,61 @@
+services:
+  mcp-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crusty-proxy
+    restart: unless-stopped
+
+    # Security hardening
+    user: "2000:2000"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    # Config files mounted read-only — OpenClaw has NO access to these paths
+    volumes:
+      - type: bind
+        source: ./config/keys.json
+        target: /etc/mcp-proxy/keys.json
+        read_only: true
+      - type: bind
+        source: ./config/allowlist.json
+        target: /etc/mcp-proxy/allowlist.json
+        read_only: true
+      # Writable tmp for Node.js runtime internals
+      - type: tmpfs
+        target: /tmp
+
+    networks:
+      - openclaw-internal
+
+    # NOT exposed to host — only reachable from internal network
+    expose:
+      - "3000"
+
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Paths are defaults; only override if you change the volume targets
+      # KEYS_PATH: /etc/mcp-proxy/keys.json
+      # ALLOWLIST_PATH: /etc/mcp-proxy/allowlist.json
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  openclaw-internal:
+    external: true
+    name: openclaw-internal
