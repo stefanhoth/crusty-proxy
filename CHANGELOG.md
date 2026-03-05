@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.0...v1.0.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **deps:** update dependency express to v5 ([#6](https://github.com/stefanhoth/crusty-proxy/issues/6)) ([0f760da](https://github.com/stefanhoth/crusty-proxy/commit/0f760da5b5eb0f1890487c73162a3bf5502e3181))
+
 # 1.0.0 (2026-03-05)
 
 
