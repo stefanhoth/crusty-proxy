@@ -1,0 +1,47 @@
+{
+  "services": {
+    "google_calendar": {
+      "enabled": true,
+      "allowed_operations": [
+        "list_events",
+        "get_event",
+        "create_event"
+      ]
+    },
+    "email": {
+      "enabled": true,
+      "allowed_operations": [
+        "list_messages",
+        "get_message",
+        "send_message"
+      ]
+    },
+    "todoist": {
+      "enabled": true,
+      "allowed_operations": [
+        "get_tasks",
+        "get_task",
+        "create_task",
+        "close_task",
+        "get_projects"
+      ]
+    },
+    "google_places": {
+      "enabled": true,
+      "allowed_operations": [
+        "search_places",
+        "get_place_details",
+        "nearby_search",
+        "autocomplete",
+        "resolve_location"
+      ]
+    },
+    "gemini": {
+      "enabled": true,
+      "allowed_operations": [
+        "generate_image",
+        "edit_image"
+      ]
+    }
+  }
+}

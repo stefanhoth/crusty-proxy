@@ -1,0 +1,34 @@
+{
+  "google_calendar": {
+    "client_id": "YOUR_GOOGLE_OAUTH2_CLIENT_ID.apps.googleusercontent.com",
+    "client_secret": "YOUR_GOOGLE_OAUTH2_CLIENT_SECRET",
+    "refresh_token": "YOUR_OAUTH2_REFRESH_TOKEN",
+    "calendar_id": "primary"
+  },
+  "email": {
+    "imap": {
+      "host": "imap.example.com",
+      "port": 993,
+      "tls": true,
+      "username": "you@example.com",
+      "password": "YOUR_IMAP_PASSWORD"
+    },
+    "smtp": {
+      "host": "smtp.example.com",
+      "port": 587,
+      "secure": false,
+      "username": "you@example.com",
+      "password": "YOUR_SMTP_PASSWORD"
+    }
+  },
+  "todoist": {
+    "mcp_url": "https://ai.todoist.net/mcp",
+    "bearer_token": "YOUR_TODOIST_OAUTH_BEARER_TOKEN"
+  },
+  "google_places": {
+    "api_key": "YOUR_GOOGLE_PLACES_API_KEY"
+  },
+  "gemini": {
+    "api_key": "YOUR_GEMINI_API_KEY"
+  }
+}
