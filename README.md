@@ -72,14 +72,9 @@ docker network create openclaw-internal
 ### 4. Create and secure the keys file
 
 ```bash
-# Switch to the crusty user:
-sudo -u crusty bash
-
-cd /opt/mcp-proxy
-cp config/keys.example.json config/keys.json
-chmod 600 config/keys.json        # readable only by crusty
-nano config/keys.json             # fill in your credentials
-exit
+sudo -u crusty cp /opt/mcp-proxy/config/keys.example.json /opt/mcp-proxy/config/keys.json
+sudo -u crusty chmod 600 /opt/mcp-proxy/config/keys.json
+sudo -u crusty nano /opt/mcp-proxy/config/keys.json
 ```
 
 ### 5. Start
