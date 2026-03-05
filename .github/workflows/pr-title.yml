@@ -1,0 +1,90 @@
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate conventional commit format
+        id: lint
+        uses: amannn/action-semantic-pull-request@v5
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR node ID (needed for GraphQL mutations)
+        id: node
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "id=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq .node_id)" >> $GITHUB_OUTPUT
+
+      - name: Convert to draft on invalid title
+        if: steps.lint.outcome == 'failure' && !github.event.pull_request.draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              convertPullRequestToDraft(input: { pullRequestId: $id }) {
+                pullRequest { isDraft }
+              }
+            }' -f id="${{ steps.node.outputs.id }}"
+
+      - name: Mark ready for review on valid title
+        if: steps.lint.outcome == 'success' && github.event.pull_request.draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                pullRequest { isDraft }
+              }
+            }' -f id="${{ steps.node.outputs.id }}"
+
+      - name: Post comment on invalid title
+        if: steps.lint.outcome == 'failure'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint
+          message: |
+            **PR-Titel entspricht nicht dem Conventional Commits Format.**
+
+            Der Titel wird bei Squash-Merge als Commit-Nachricht verwendet und bestimmt ob `semantic-release` ein neues Release erstellt.
+
+            **Format:** `<type>(<scope>): <beschreibung>`
+
+            | Type | Bedeutung | Release |
+            |------|-----------|---------|
+            | `feat` | Neue Funktionalität | Minor `1.x.0` |
+            | `fix` | Bugfix | Patch `1.0.x` |
+            | `feat!` oder `BREAKING CHANGE` im Body | Breaking Change | Major `x.0.0` |
+            | `docs`, `ci`, `test`, `chore`, `build`, `refactor` | Kein Release | — |
+
+            **Beispiele:**
+            ```
+            feat(email): add attachment support
+            fix(places): cap result limit at 20
+            ci: add branch protection rules
+            chore(deps): update bun to 1.4.0
+            ```
+
+            Titel korrigieren → PR wird automatisch wieder auf „Ready for review" gesetzt.
+
+      - name: Delete comment on valid title
+        if: steps.lint.outcome == 'success'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint
+          delete: true
+
+      - name: Fail check on invalid title
+        if: steps.lint.outcome == 'failure'
+        run: exit 1
