@@ -17,6 +17,14 @@ import { UpstreamMCPClient } from "./upstream.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { Allowlist, Keys, ToolResult } from "./types.js";
 
+// ── Logging ──────────────────────────────────────────────────────────────────
+
+const log = {
+  info:  (...args: unknown[]) => console.log( new Date().toISOString(), "[crusty-proxy]", ...args),
+  warn:  (...args: unknown[]) => console.warn( new Date().toISOString(), "[crusty-proxy]", ...args),
+  error: (...args: unknown[]) => console.error(new Date().toISOString(), "[crusty-proxy]", ...args),
+};
+
 // ── Startup ─────────────────────────────────────────────────────────────────
 
 let keys: Keys;
@@ -25,18 +33,25 @@ let allowlist: Allowlist;
 try {
   keys = loadKeys();
   allowlist = loadAllowlist();
-  console.log("[crusty-proxy] Config loaded successfully");
+  log.info("Config loaded successfully");
 } catch (err) {
-  console.error("[crusty-proxy] FATAL: Failed to load config:", err);
+  log.error("FATAL: Failed to load config:", err);
   process.exit(1);
 }
 
 // ── Local service instances (direct API wrappers) ────────────────────────────
 
 const calendar = keys.google_calendar ? new CalendarService(keys.google_calendar) : null;
-const email = keys.email ? new EmailService(keys.email) : null;
-const places = keys.google_places ? new PlacesService(keys.google_places) : null;
-const gemini = keys.gemini ? new GeminiService(keys.gemini) : null;
+const email    = keys.email           ? new EmailService(keys.email)               : null;
+const places   = keys.google_places   ? new PlacesService(keys.google_places)      : null;
+const gemini   = keys.gemini          ? new GeminiService(keys.gemini)             : null;
+
+log.info("Services configured:", {
+  google_calendar: calendar !== null,
+  email:           email    !== null,
+  google_places:   places   !== null,
+  gemini:          gemini   !== null,
+});
 
 // ── Upstream MCP clients (official hosted MCP servers) ───────────────────────
 // Populated async in main() before the HTTP server starts.
@@ -52,6 +67,7 @@ async function initUpstreams(): Promise<void> {
     );
     await client.connect();
     upstreams.set("todoist", client);
+    log.info(`Todoist upstream connected — ${client.tools.length} tools available`);
   }
   // Add future official MCP servers here (same pattern):
   //   if (keys.someService && allowlist.services.someService?.enabled) {
@@ -346,6 +362,7 @@ async function handleToolCall(
     isError: true,
   });
 
+  log.info(`Tool call: ${name}`);
   try {
     // Google Calendar
     if (name === "calendar.list_events") {
@@ -442,7 +459,7 @@ async function handleToolCall(
     return err(`Unknown tool: ${name}`);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    console.error(`[crusty-proxy] Tool error (${name}):`, message);
+    log.error(`Tool error (${name}):`, message);
     return { content: [{ type: "text", text: `Error calling ${name}: ${message}` }], isError: true };
   }
 }
@@ -477,12 +494,12 @@ app.use(express.json());
 const transports = new Map<string, SSEServerTransport>();
 
 app.get("/sse", async (req, res) => {
-  console.log("[crusty-proxy] New SSE connection from", req.ip);
+  log.info("New SSE connection from", req.ip);
   const transport = new SSEServerTransport("/messages", res);
   transports.set(transport.sessionId, transport);
 
   res.on("close", () => {
-    console.log("[crusty-proxy] SSE connection closed", transport.sessionId);
+    log.info("SSE connection closed", transport.sessionId);
     transports.delete(transport.sessionId);
   });
 
@@ -503,6 +520,7 @@ app.post("/messages", async (req, res) => {
 // ── Streamable HTTP transport (mcporter, modern MCP clients) ──────────────────
 
 app.post("/mcp", async (req, res) => {
+  log.info("Streamable HTTP request from", req.ip);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const server = createServer();
   await server.connect(transport);
@@ -535,13 +553,13 @@ async function main(): Promise<void> {
   const PORT = parseInt(process.env.PORT ?? "3000", 10);
   app.listen(PORT, "0.0.0.0", () => {
     const toolCount = buildTools(allowlist).length;
-    console.log(`[crusty-proxy] MCP proxy listening on :${PORT} — ${toolCount} tools active`);
-    console.log(`[crusty-proxy] SSE endpoint:              http://0.0.0.0:${PORT}/sse`);
-    console.log(`[crusty-proxy] Streamable HTTP endpoint: http://0.0.0.0:${PORT}/mcp`);
+    log.info(`Crusty Proxy v${version} listening on :${PORT} — ${toolCount} tools active`);
+    log.info(`SSE endpoint:              http://0.0.0.0:${PORT}/sse`);
+    log.info(`Streamable HTTP endpoint: http://0.0.0.0:${PORT}/mcp`);
   });
 }
 
 main().catch((err) => {
-  console.error("[crusty-proxy] FATAL startup error:", err);
+  log.error("FATAL startup error:", err);
   process.exit(1);
 });
