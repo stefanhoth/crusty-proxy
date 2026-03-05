@@ -2,6 +2,7 @@ import { version } from "../package.json";
 import express from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -499,6 +500,15 @@ app.post("/messages", async (req, res) => {
   await transport.handlePostMessage(req, res);
 });
 
+// ── Streamable HTTP transport (mcporter, modern MCP clients) ──────────────────
+
+app.post("/mcp", async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  const server = createServer();
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -526,7 +536,8 @@ async function main(): Promise<void> {
   app.listen(PORT, "0.0.0.0", () => {
     const toolCount = buildTools(allowlist).length;
     console.log(`[crusty-proxy] MCP proxy listening on :${PORT} — ${toolCount} tools active`);
-    console.log(`[crusty-proxy] SSE endpoint: http://0.0.0.0:${PORT}/sse`);
+    console.log(`[crusty-proxy] SSE endpoint:              http://0.0.0.0:${PORT}/sse`);
+    console.log(`[crusty-proxy] Streamable HTTP endpoint: http://0.0.0.0:${PORT}/mcp`);
   });
 }
 

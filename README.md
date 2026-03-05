@@ -169,7 +169,7 @@ And add `openclaw-internal` to the OpenClaw service's `networks:` list.
 
 ```bash
 # Run inside the OpenClaw container (or exec into it):
-mcporter config add crusty-proxy http://crusty-proxy:3000/sse
+mcporter config add crusty-proxy http://crusty-proxy:3000/mcp
 ```
 
 This writes an entry to mcporter's config file (`~/.mcporter/mcporter.json`):
@@ -178,7 +178,7 @@ This writes an entry to mcporter's config file (`~/.mcporter/mcporter.json`):
 {
   "mcpServers": {
     "crusty-proxy": {
-      "baseUrl": "http://crusty-proxy:3000/sse"
+      "baseUrl": "http://crusty-proxy:3000/mcp"
     }
   }
 }
