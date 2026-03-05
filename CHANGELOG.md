@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.4...v1.0.5) (2026-03-05)
+
+
+### Bug Fixes
+
+* **ci:** checkout release tag in docker job to get updated package.json ([659bccf](https://github.com/stefanhoth/crusty-proxy/commit/659bccf67653ee8033b7cd3ad6ebc365a3819370))
+
 ## [1.0.4](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.3...v1.0.4) (2026-03-05)
 
 
