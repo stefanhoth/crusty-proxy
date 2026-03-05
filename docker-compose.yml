@@ -1,8 +1,10 @@
 services:
   mcp-proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/stefanhoth/crusty-proxy:latest
+    # To build from source instead: comment out image: above and uncomment:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: crusty-proxy
     restart: unless-stopped
 
@@ -43,7 +45,7 @@ services:
       # ALLOWLIST_PATH: /etc/mcp-proxy/allowlist.json
 
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      test: ["CMD", "bun", "--eval", "const r=await fetch('http://localhost:3000/health');process.exit(r.ok?0:1)"]
       interval: 30s
       timeout: 5s
       retries: 3

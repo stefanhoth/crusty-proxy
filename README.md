@@ -47,13 +47,17 @@ usermod -aG docker mcpproxy
 
 > **Why a separate user?** If OpenClaw is ever compromised, the attacker gains the OpenClaw user's privileges — not `mcpproxy`'s. The config files in `/opt/mcp-proxy/config/` (including API keys) are owned by `mcpproxy` and unreadable to the OpenClaw user.
 
-### 2. Clone and prepare the directory
+### 2. Get the config files
+
+The Docker image is published to GHCR — no build step needed on the VPS. You only need the `docker-compose.yml` and the config templates:
 
 ```bash
 # As root or your deploy user:
 git clone https://github.com/stefanhoth/crusty-proxy.git /opt/mcp-proxy
 chown -R mcpproxy:mcpproxy /opt/mcp-proxy
 ```
+
+> Alternatively, download just `docker-compose.yml` and `config/` manually — `docker compose up` will pull the image automatically.
 
 ### 3. Create the shared Docker network
 
@@ -74,12 +78,14 @@ nano config/keys.json             # fill in your credentials
 exit
 ```
 
-### 5. Build and start
+### 5. Start
 
 ```bash
-sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml up -d --build
+sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml up -d
 sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml logs -f
 ```
+
+The image is pulled automatically from `ghcr.io/stefanhoth/crusty-proxy:latest`. To build from source instead, see the comment in `docker-compose.yml`.
 
 ### 6. Verify health
 
