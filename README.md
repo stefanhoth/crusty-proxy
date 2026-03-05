@@ -4,48 +4,82 @@ MCP proxy server — security layer between OpenClaw and external APIs.
 OpenClaw interacts with this proxy via the MCP protocol over an internal Docker network.
 The proxy holds all API keys and enforces an operations allowlist. OpenClaw never sees credentials.
 
+## Assumptions
+
+- **Both OpenClaw and crusty-proxy run on the same host.** They communicate over an internal Docker network (`openclaw-internal`). No external networking, no TLS between them — the shared host is the trust boundary.
+- **The host is a self-managed VPS** (Ubuntu 24 or similar). You have root access to create users and manage Docker.
+
 ## Architecture
 
 ```
+VPS host
+├── User: openclaw   → runs /opt/openclaw-src  (docker compose)
+└── User: mcpproxy   → runs /opt/mcp-proxy     (docker compose, owns config)
+
 OpenClaw container
-    │  MCP/SSE over openclaw-internal Docker network
+    │  MCP/SSE  ·  http://crusty-proxy:3000/sse
+    │  (openclaw-internal Docker network — host-internal only)
     ▼
 crusty-proxy container  (UID 2000, read-only rootfs)
     │  /etc/mcp-proxy/keys.json        (bind-mount, read-only)
     │  /etc/mcp-proxy/allowlist.json   (bind-mount, read-only)
     │
-    ├──► Google Calendar API (OAuth2)
+    ├──► Google Calendar API  (OAuth2)
     ├──► IMAP / SMTP
-    ├──► Todoist REST API
-    ├──► Google Places API
+    ├──► Todoist MCP          (ai.todoist.net — official hosted MCP)
+    ├──► Google Places API    (via goplaces CLI)
     └──► Gemini / Imagen API
 ```
 
 ## First-time setup on VPS
 
-### 1. Create the shared Docker network
+### 1. Create a dedicated system user
+
+Run as root. This user owns the proxy files and runs its Docker Compose — completely separate from the user running OpenClaw.
+
+```bash
+useradd --system --shell /usr/sbin/nologin --create-home --home-dir /opt/mcp-proxy mcpproxy
+# Allow mcpproxy to manage Docker without sudo
+usermod -aG docker mcpproxy
+```
+
+> **Why a separate user?** If OpenClaw is ever compromised, the attacker gains the OpenClaw user's privileges — not `mcpproxy`'s. The config files in `/opt/mcp-proxy/config/` (including API keys) are owned by `mcpproxy` and unreadable to the OpenClaw user.
+
+### 2. Clone and prepare the directory
+
+```bash
+# As root or your deploy user:
+git clone https://github.com/stefanhoth/crusty-proxy.git /opt/mcp-proxy
+chown -R mcpproxy:mcpproxy /opt/mcp-proxy
+```
+
+### 3. Create the shared Docker network
 
 ```bash
 docker network create openclaw-internal
 ```
 
-### 2. Copy and fill in secrets
+### 4. Create and secure the keys file
 
 ```bash
+# Switch to the mcpproxy user:
+sudo -u mcpproxy bash
+
 cd /opt/mcp-proxy
 cp config/keys.example.json config/keys.json
-chmod 600 config/keys.json
-nano config/keys.json   # fill in your credentials
+chmod 600 config/keys.json        # readable only by mcpproxy
+nano config/keys.json             # fill in your credentials
+exit
 ```
 
-### 3. Build and start
+### 5. Build and start
 
 ```bash
-docker compose up -d --build
-docker compose logs -f
+sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml up -d --build
+sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml logs -f
 ```
 
-### 4. Verify health
+### 6. Verify health
 
 ```bash
 # From the VPS host:
@@ -85,11 +119,18 @@ Scope: https://www.googleapis.com/auth/calendar
 2. Imagen 3 requires billing enabled on your Google Cloud project
 3. Put the key into `keys.json` under `gemini.api_key`
 
-### Todoist
+### Todoist (official hosted MCP)
 
-1. Go to https://app.todoist.com/app/settings/integrations/developer
-2. Copy your personal API token
-3. Put it into `keys.json` under `todoist.api_token`
+Todoist provides an official MCP server at `https://ai.todoist.net/mcp`. Authentication is OAuth — do this once on a machine with a browser, then copy the token to the VPS.
+
+```bash
+# On a machine with a browser (e.g. your laptop):
+npx mcporter auth https://ai.todoist.net/mcp
+# Follow the browser OAuth flow, then find the token:
+cat ~/.mcporter/*/token.json
+```
+
+Copy the `access_token` value into `keys.json` under `todoist.bearer_token`.
 
 ### Email (IMAP/SMTP)
 
@@ -102,7 +143,19 @@ For Gmail: use an App Password and:
 
 ## Connecting OpenClaw to the proxy
 
-In OpenClaw's MCP server configuration add:
+Both services must be on the same host. OpenClaw's Docker Compose needs to join the shared network.
+
+**Add to `/opt/openclaw-src/docker-compose.yml`:**
+```yaml
+networks:
+  default:
+    name: openclaw-src_default
+  openclaw-internal:
+    external: true
+```
+And add `openclaw-internal` to the OpenClaw service's `networks:` list.
+
+**Then add to OpenClaw's MCP server configuration:**
 
 ```json
 {
@@ -115,32 +168,24 @@ In OpenClaw's MCP server configuration add:
 }
 ```
 
-**Notes:**
-- `crusty-proxy` resolves via Docker DNS because both containers share `openclaw-internal`
-- No API key or auth needed — the internal network is the trust boundary
-- OpenClaw must be joined to `openclaw-internal` (see below)
-
-**Joining OpenClaw to the shared network** — add to `/opt/openclaw-src/docker-compose.yml`:
-```yaml
-networks:
-  default:
-    name: openclaw-src_default
-  openclaw-internal:
-    external: true
-```
-And add `openclaw-internal` to the OpenClaw service's `networks:` list.
+`crusty-proxy` resolves via Docker DNS — no IP addresses, no ports exposed to the internet.
 
 ---
 
 ## Modifying the allowlist
 
-Edit `config/allowlist.json` on the host, then:
-
 ```bash
-docker compose restart mcp-proxy
+sudo -u mcpproxy nano /opt/mcp-proxy/config/allowlist.json
+sudo -u mcpproxy docker compose -f /opt/mcp-proxy/docker-compose.yml restart mcp-proxy
 ```
 
-The file is read-only inside the container. Set `"enabled": false` to disable a service completely.
+The file is bind-mounted read-only inside the container. Set `"enabled": false` to disable a service entirely.
+
+To discover which tool names the official Todoist MCP currently exposes:
+
+```bash
+npx mcporter list https://ai.todoist.net/mcp
+```
 
 ---
 
@@ -148,20 +193,24 @@ The file is read-only inside the container. Set `"enabled": false` to disable a 
 
 | Tool | Service | Notes |
 |------|---------|-------|
-| `calendar_list_events` | Google Calendar | |
-| `calendar_get_event` | Google Calendar | |
-| `calendar_create_event` | Google Calendar | |
-| `email_list_messages` | IMAP | |
-| `email_get_message` | IMAP | |
-| `email_send_message` | SMTP | |
-| `todoist_list_tasks` | Todoist | |
-| `todoist_get_task` | Todoist | |
-| `todoist_create_task` | Todoist | |
-| `todoist_complete_task` | Todoist | |
-| `places_search` | Google Places | |
-| `places_get_details` | Google Places | |
-| `gemini_generate_image` | Imagen 3 | returns image content |
-| `gemini_edit_image` | Gemini 2.0 Flash | returns image content |
+| `calendar.list_events` | Google Calendar | |
+| `calendar.get_event` | Google Calendar | |
+| `calendar.create_event` | Google Calendar | |
+| `email.list_messages` | IMAP | |
+| `email.get_message` | IMAP | |
+| `email.send_message` | SMTP | |
+| `todoist.get_tasks` | Todoist MCP | upstream tool names may vary |
+| `todoist.get_task` | Todoist MCP | |
+| `todoist.create_task` | Todoist MCP | |
+| `todoist.close_task` | Todoist MCP | |
+| `todoist.get_projects` | Todoist MCP | |
+| `places.search` | Google Places | |
+| `places.get_details` | Google Places | |
+| `places.nearby` | Google Places | |
+| `places.autocomplete` | Google Places | |
+| `places.resolve` | Google Places | |
+| `gemini.generate_image` | Imagen 3 | returns image content |
+| `gemini.edit_image` | Gemini 2.0 Flash | returns image content |
 
 Deliberately **not implemented**: delete calendar events, delete emails, delete Todoist tasks.
 
