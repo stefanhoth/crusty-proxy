@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "npm dependencies",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "Docker base images",
+      "automerge": false
+    }
+  ],
+  "dockerfile": {
+    "enabled": true
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["Dockerfile"],
+      "matchStrings": [
+        "go install github\\.com/steipete/goplaces/cmd/goplaces@v(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "steipete/goplaces",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "steipete/goplaces",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    }
+  ]
+}
