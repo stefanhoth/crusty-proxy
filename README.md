@@ -40,10 +40,13 @@ crusty-proxy container  (UID 2000, read-only rootfs)
 Run as root. This user owns the proxy files and runs its Docker Compose — completely separate from the user running OpenClaw.
 
 ```bash
-useradd --system --shell /usr/sbin/nologin --create-home --home-dir /opt/mcp-proxy crusty
+groupadd --gid 2000 crusty
+useradd --system --uid 2000 --gid 2000 --shell /usr/sbin/nologin --create-home --home-dir /opt/mcp-proxy crusty
 # Allow crusty to manage Docker without sudo
 usermod -aG docker crusty
 ```
+
+> UID/GID 2000 must match the user inside the container. If either is already taken on your system, pick a free UID/GID and update `user:` in `docker-compose.yml` accordingly.
 
 > **Why a separate user?** If OpenClaw is ever compromised, the attacker gains the OpenClaw user's privileges — not `crusty`'s. The config files in `/opt/mcp-proxy/config/` (including API keys) are owned by `crusty` and unreadable to the OpenClaw user.
 
