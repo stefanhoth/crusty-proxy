@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.3...v1.0.4) (2026-03-05)
+
+
+### Bug Fixes
+
+* read version from package.json instead of hardcoding it ([fb6ee6b](https://github.com/stefanhoth/crusty-proxy/commit/fb6ee6b4f75588de62d2890cd1390cc3a02dfbdc))
+
 ## [1.0.3](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.2...v1.0.3) (2026-03-05)
 
 

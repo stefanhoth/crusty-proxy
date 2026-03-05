@@ -1,6 +1,6 @@
 {
   "name": "crusty-proxy",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP proxy server - security layer between OpenClaw and external APIs",
   "type": "module",
   "packageManager": "bun@1.3.10",
