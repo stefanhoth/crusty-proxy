@@ -1,3 +1,4 @@
+import { version } from "../package.json";
 import express from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
@@ -449,7 +450,7 @@ async function handleToolCall(
 
 function createServer(): Server {
   const server = new Server(
-    { name: "crusty-proxy", version: "1.0.0" },
+    { name: "crusty-proxy", version },
     { capabilities: { tools: {} } },
   );
 
@@ -501,7 +502,7 @@ app.post("/messages", async (req, res) => {
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
-    version: "1.0.0",
+    version,
     services: {
       google_calendar: calendar !== null && (allowlist.services.google_calendar?.enabled ?? false),
       email: email !== null && (allowlist.services.email?.enabled ?? false),
