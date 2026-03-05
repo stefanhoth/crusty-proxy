@@ -1,9 +1,6 @@
 import { readFileSync } from "fs";
 import { AllowlistSchema, KeysSchema, type Allowlist, type Keys } from "./types.js";
 
-const KEYS_PATH = process.env.KEYS_PATH ?? "/etc/mcp-proxy/keys.json";
-const ALLOWLIST_PATH = process.env.ALLOWLIST_PATH ?? "/etc/mcp-proxy/allowlist.json";
-
 function loadJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf-8"));
@@ -13,7 +10,7 @@ function loadJson(path: string): unknown {
 }
 
 export function loadKeys(): Keys {
-  const raw = loadJson(KEYS_PATH);
+  const raw = loadJson(process.env.KEYS_PATH ?? "/etc/mcp-proxy/keys.json");
   const result = KeysSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid keys config: ${result.error.message}`);
@@ -22,7 +19,7 @@ export function loadKeys(): Keys {
 }
 
 export function loadAllowlist(): Allowlist {
-  const raw = loadJson(ALLOWLIST_PATH);
+  const raw = loadJson(process.env.ALLOWLIST_PATH ?? "/etc/mcp-proxy/allowlist.json");
   const result = AllowlistSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid allowlist config: ${result.error.message}`);

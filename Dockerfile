@@ -2,21 +2,8 @@
 FROM golang:1.24-alpine AS goplaces-builder
 RUN go install github.com/steipete/goplaces/cmd/goplaces@v0.3.0
 
-# ── Node build stage ──────────────────────────────────────────────────────────
-FROM node:24-alpine AS builder
-
-WORKDIR /build
-
-COPY package*.json ./
-RUN npm ci --ignore-scripts
-
-COPY tsconfig.json ./
-COPY src/ ./src/
-
-RUN npm run build
-
 # ── Production stage ──────────────────────────────────────────────────────────
-FROM node:24-alpine AS runtime
+FROM oven/bun:1-alpine AS runtime
 
 # Non-root, non-1000 user for the proxy process
 RUN addgroup -g 2000 mcpproxy && \
@@ -25,12 +12,11 @@ RUN addgroup -g 2000 mcpproxy && \
 WORKDIR /app
 
 # Install production deps only
-COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts && \
-    npm cache clean --force
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
 
-# Copy compiled output
-COPY --from=builder /build/dist ./dist
+# Source — Bun runs TypeScript directly, no build step needed
+COPY src/ ./src/
 
 # goplaces binary (pre-built Go binary, no Go runtime needed at runtime)
 COPY --from=goplaces-builder /go/bin/goplaces /usr/local/bin/goplaces
@@ -44,8 +30,8 @@ USER mcpproxy
 
 EXPOSE 3000
 
-# Healthcheck via the /health endpoint
+# Healthcheck via the /health endpoint (bun has native fetch — no wget needed)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD bun --eval "const r=await fetch('http://localhost:3000/health');process.exit(r.ok?0:1)"
 
-CMD ["node", "dist/index.js"]
+CMD ["bun", "src/index.ts"]

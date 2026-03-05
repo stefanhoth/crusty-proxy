@@ -4,9 +4,10 @@
   "description": "MCP proxy server - security layer between OpenClaw and external APIs",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
@@ -18,10 +19,9 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/express": "^5.0.0",
-    "@types/node": "^24.0.0",
     "@types/nodemailer": "^6.4.17",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }
