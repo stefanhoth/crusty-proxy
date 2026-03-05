@@ -2,7 +2,9 @@
 
 MCP proxy server — security layer between OpenClaw and external APIs.
 OpenClaw interacts with this proxy via the MCP protocol over an internal Docker network.
-The proxy holds all API keys and enforces an operations allowlist. OpenClaw never sees credentials.
+The proxy holds all API keys and enforces an operations allowlist.
+
+**What this mitigates:** OpenClaw never sees credentials, which prevents secret exfiltration attacks (e.g. a compromised or manipulated agent leaking API keys). The allowlist limits which operations are available, reducing the blast radius of a misbehaving agent — but it does not prevent malicious use of the tools that are permitted. A compromised OpenClaw could still send emails, create calendar events, or complete tasks within the bounds of what the allowlist allows.
 
 ## Assumptions
 
