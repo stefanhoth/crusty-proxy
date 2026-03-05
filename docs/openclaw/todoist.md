@@ -7,7 +7,7 @@ metadata:
     "openclaw":
       {
         "emoji": "✅",
-        "requires": { "mcp": ["crusty-proxy"] },
+        "requires": { "bins": ["mcporter"] },
         "mcpServer": "crusty-proxy",
       },
   }

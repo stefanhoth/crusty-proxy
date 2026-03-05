@@ -157,20 +157,32 @@ networks:
 ```
 And add `openclaw-internal` to the OpenClaw service's `networks:` list.
 
-**Then add to OpenClaw's MCP server configuration:**
+**Then register crusty-proxy with mcporter inside the OpenClaw container:**
+
+```bash
+# Run inside the OpenClaw container (or exec into it):
+mcporter config add crusty-proxy http://crusty-proxy:3000/sse
+```
+
+This writes an entry to mcporter's config file (typically `~/.mcporter/config.json`):
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "crusty-proxy": {
-      "url": "http://crusty-proxy:3000/sse",
-      "transport": "sse"
+      "url": "http://crusty-proxy:3000/sse"
     }
   }
 }
 ```
 
 `crusty-proxy` resolves via Docker DNS — no IP addresses, no ports exposed to the internet.
+
+**Verify the connection:**
+
+```bash
+mcporter list crusty-proxy
+```
 
 ---
 
