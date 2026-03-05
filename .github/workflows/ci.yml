@@ -22,10 +22,36 @@ jobs:
 
       - run: bun test
 
-  docker:
+  release:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      new_release_published: ${{ steps.release.outputs.new_release_published }}
+      new_release_version: ${{ steps.release.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: cycjimmy/semantic-release-action@v4
+        id: release
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
     permissions:
       contents: read
       packages: write
@@ -46,7 +72,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/stefanhoth/crusty-proxy:latest
-            ghcr.io/stefanhoth/crusty-proxy:${{ github.sha }}
+            ghcr.io/stefanhoth/crusty-proxy:v${{ needs.release.outputs.new_release_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
