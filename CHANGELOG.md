@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.1...v1.0.2) (2026-03-05)
+
+
+### Bug Fixes
+
+* rename container user to crusty, replace git clone with curl ([354c107](https://github.com/stefanhoth/crusty-proxy/commit/354c107aa11ce8ac2e15d440049672fccda4a378))
+
 ## [1.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.0...v1.0.1) (2026-03-05)
 
 
