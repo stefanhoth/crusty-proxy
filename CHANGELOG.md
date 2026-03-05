@@ -1,3 +1,11 @@
+# [1.1.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.5...v1.1.0) (2026-03-05)
+
+
+### Features
+
+* add Streamable HTTP transport at /mcp for mcporter compatibility ([6d40999](https://github.com/stefanhoth/crusty-proxy/commit/6d40999aa13e2824d050b5a8e5ce5bc31fabb772))
+* **logging:** add timestamps, structured startup info, and tool call audit ([51c4dab](https://github.com/stefanhoth/crusty-proxy/commit/51c4dabf46c9d5e47ca14d0e61d64ab37b9bcf4d))
+
 ## [1.0.5](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.4...v1.0.5) (2026-03-05)
 
 
