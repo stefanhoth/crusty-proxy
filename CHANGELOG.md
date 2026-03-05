@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.2...v1.0.3) (2026-03-05)
+
+
+### Bug Fixes
+
+* **health:** reflect allowlist enabled state in /health response ([e01f721](https://github.com/stefanhoth/crusty-proxy/commit/e01f7214180c997cca42ccba9687e8e6031a4d98))
+
 ## [1.0.2](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.1...v1.0.2) (2026-03-05)
 
 
