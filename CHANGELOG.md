@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.5...v1.1.6) (2026-03-06)
+
+
+### Bug Fixes
+
+* increase JSON body limit to 20mb for base64 image payloads ([0bc11cb](https://github.com/stefanhoth/crusty-proxy/commit/0bc11cbae065859d3a5877968e94fe21622bab01))
+
 ## [1.1.5](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.4...v1.1.5) (2026-03-06)
 
 
