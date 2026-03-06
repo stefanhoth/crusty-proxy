@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.7.0...v1.8.0) (2026-03-06)
+
+
+### Features
+
+* **imap:** proper MIME parsing with HTML→Markdown body and attachment support ([a6f1ecb](https://github.com/stefanhoth/crusty-proxy/commit/a6f1ecbc39757b426857f040c55641590e4af43f))
+
 # [1.7.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.6.0...v1.7.0) (2026-03-06)
 
 
