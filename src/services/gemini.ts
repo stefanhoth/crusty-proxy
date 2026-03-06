@@ -46,7 +46,12 @@ export class GeminiService {
       });
 
     if (images.length === 0) {
-      throw new Error("Gemini returned no images");
+      const candidate = res.data.candidates?.[0];
+      throw new Error(
+        `Gemini returned no images. finishReason=${candidate?.finishReason ?? "unknown"} ` +
+        `parts=${JSON.stringify(parts.map((p) => Object.keys(p)))} ` +
+        `promptFeedback=${JSON.stringify(res.data.promptFeedback ?? null)}`,
+      );
     }
 
     return {
