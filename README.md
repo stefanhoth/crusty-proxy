@@ -109,9 +109,13 @@ docker exec crusty-proxy bun --eval \
 
 ## Service credentials
 
-### Google Workspace — Calendar & Gmail (via gws)
+### Google Workspace (via gws)
 
-Calendar and Gmail are proxied through the [Google Workspace CLI](https://github.com/googleworkspace/cli) (`gws`), which handles OAuth2 and speaks MCP over stdio. Do this once on a machine with a browser, then copy the credentials to the VPS.
+Google Workspace services (Calendar, Gmail, Drive, Docs, Sheets, Tasks, Chat) are proxied through the [Google Workspace CLI](https://github.com/googleworkspace/cli) (`gws`), which handles OAuth2 and speaks MCP over stdio.
+
+**Which services are available depends on what you enable during `gws auth setup`** — the CLI lets you choose which Google APIs to enable in your Cloud project and which scopes to authorize. Only services you authorized there will work in the proxy, regardless of what is enabled in `allowlist.json`.
+
+Do the auth setup once on a machine with a browser, then copy the credentials to the VPS:
 
 ```bash
 # On a machine with a browser (e.g. your laptop):
@@ -129,7 +133,7 @@ chown root:crusty /opt/mcp-proxy/config/gws-credentials.json
 chmod 640 /opt/mcp-proxy/config/gws-credentials.json
 ```
 
-Then enable gws in `allowlist.json` (set `"enabled": true` in the `gws` block) and restart.
+Then enable the individual services you want in `allowlist.json` (e.g. `"gws_calendar": { "enabled": true, ... }`) and restart. Each `gws_*` block can be toggled independently — only enabled services are passed to the CLI process at startup.
 
 ### CalDAV calendar
 
