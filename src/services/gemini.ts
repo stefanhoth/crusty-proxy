@@ -39,10 +39,10 @@ export class GeminiService {
       res.data.candidates?.[0]?.content?.parts ?? [];
 
     const images: ImageContent[] = parts
-      .filter((p) => p.inline_data)
+      .filter((p) => p.inlineData)
       .map((p) => {
-        const d = p.inline_data as { mime_type: string; data: string };
-        return { type: "image" as const, data: d.data, mimeType: d.mime_type };
+        const d = p.inlineData as { mimeType: string; data: string };
+        return { type: "image" as const, data: d.data, mimeType: d.mimeType };
       });
 
     if (images.length === 0) {
@@ -73,8 +73,8 @@ export class GeminiService {
             role: "user",
             parts: [
               {
-                inline_data: {
-                  mime_type: args.image_mime_type ?? "image/png",
+                inlineData: {
+                  mimeType: args.image_mime_type ?? "image/png",
                   data: args.image_base64,
                 },
               },
@@ -96,10 +96,10 @@ export class GeminiService {
       res.data.candidates?.[0]?.content?.parts ?? [];
 
     const images: ImageContent[] = parts
-      .filter((p) => p.inline_data)
+      .filter((p) => p.inlineData)
       .map((p) => {
-        const d = p.inline_data as { mime_type: string; data: string };
-        return { type: "image" as const, data: d.data, mimeType: d.mime_type };
+        const d = p.inlineData as { mimeType: string; data: string };
+        return { type: "image" as const, data: d.data, mimeType: d.mimeType };
       });
 
     const textPart = parts.find((p) => typeof p.text === "string");
