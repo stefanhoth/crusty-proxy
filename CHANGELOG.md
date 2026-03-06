@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.0...v1.9.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gws:** pin @googleworkspace/cli to 0.7.0, block Renovate upgrades ([560eea3](https://github.com/stefanhoth/crusty-proxy/commit/560eea3c4e7ff82f19ddba37624674f59cc618b8)), closes [googleworkspace/cli#275](https://github.com/googleworkspace/cli/issues/275)
+
 # [1.9.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.8.0...v1.9.0) (2026-03-06)
 
 
