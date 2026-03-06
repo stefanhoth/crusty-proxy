@@ -6,7 +6,7 @@ import type { ImageContent } from "../types.js";
 type GeminiKeys = z.infer<typeof GeminiKeysSchema>;
 
 const IMAGEN_MODEL = "imagen-3.0-generate-001";
-const GEMINI_MODEL = "gemini-2.0-flash-exp";
+const GEMINI_MODEL = "gemini-2.5-flash-image";
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export class GeminiService {

@@ -232,7 +232,7 @@ npx mcporter list https://ai.todoist.net/mcp
 | `places.autocomplete` | Google Places | |
 | `places.resolve` | Google Places | |
 | `gemini.generate_image` | Imagen 3 | returns image content |
-| `gemini.edit_image` | Gemini 2.0 Flash | returns image content |
+| `gemini.edit_image` | Gemini 2.5 Flash | returns image content |
 
 Deliberately **not implemented**: delete calendar events, delete emails, delete Todoist tasks.
 

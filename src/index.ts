@@ -323,7 +323,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("edit_image")) {
       tools.push({
         name: "gemini.edit_image",
-        description: "Edit or transform an image using Gemini 2.0 Flash",
+        description: "Edit or transform an image using Gemini 2.5 Flash",
         inputSchema: {
           type: "object",
           properties: {
