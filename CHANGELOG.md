@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.4...v1.1.5) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** use camelCase inlineData/mimeType matching the API response format ([2351051](https://github.com/stefanhoth/crusty-proxy/commit/235105150ab032baa8611898e42a237536a8dceb))
+
 ## [1.1.4](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.3...v1.1.4) (2026-03-06)
 
 
