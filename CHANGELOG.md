@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.0...v1.1.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** upgrade edit_image model from gemini-2.0-flash-exp to gemini-2.5-flash-image ([5b8c8e2](https://github.com/stefanhoth/crusty-proxy/commit/5b8c8e2c85f9e47dfe377164613d90ab2adeab6c))
+
 # [1.1.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.5...v1.1.0) (2026-03-05)
 
 
