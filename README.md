@@ -125,18 +125,32 @@ sudo -u crusty chmod 600 /opt/mcp-proxy/config/gws-credentials.json
 
 Then enable gws in `allowlist.json` (set `"enabled": true` in the `gws` block) and restart.
 
-### Google Calendar (OAuth2 — legacy, superseded by gws)
+### CalDAV calendar
 
-The direct OAuth2 Calendar integration still works if you prefer not to use `gws`. You need a Google Cloud project with the Calendar API enabled and an OAuth2 client.
+Works with any CalDAV server: Fastmail, Nextcloud, Apple Calendar (iCloud), Radicale, Baikal, etc.
 
+```json
+"calendar": {
+  "caldav_url": "https://caldav.fastmail.com/dav/",
+  "username": "you@fastmail.com",
+  "password": "YOUR_APP_PASSWORD",
+  "calendar_url": "https://caldav.fastmail.com/dav/calendars/user/you@fastmail.com/YOUR_CALENDAR_ID/"
+}
 ```
-OAuth Playground: https://developers.google.com/oauthplayground
-Scope: https://www.googleapis.com/auth/calendar
-```
 
-1. Create OAuth2 credentials (type: Desktop app) in Google Cloud Console
-2. Authorize via OAuth Playground, get `refresh_token`
-3. Put `client_id`, `client_secret`, `refresh_token` into `keys.json`
+- `caldav_url`: The CalDAV server root. If `calendar_url` is omitted, the first discovered calendar is used.
+- `calendar_url`: Optional direct URL to a specific calendar. Recommended for servers with multiple calendars.
+- Use an **app password** where your provider supports it (Fastmail, iCloud, Nextcloud).
+
+Common server URLs:
+| Provider | `caldav_url` |
+|----------|-------------|
+| Fastmail | `https://caldav.fastmail.com/dav/` |
+| iCloud | `https://caldav.icloud.com/` |
+| Nextcloud | `https://your.nextcloud.host/remote.php/dav/` |
+| Google Calendar | Use `gws_calendar` instead |
+
+Enable in `allowlist.json` by setting `"calendar": { "enabled": true, ... }`.
 
 ### Google Places API
 
@@ -250,9 +264,9 @@ npx mcporter list https://ai.todoist.net/mcp
 | `gws.gmail_users_drafts_get` | gws / Gmail | |
 | `gws.gmail_users_drafts_create` | gws / Gmail | |
 | `gws.gmail_users_labels_list` | gws / Gmail | |
-| `calendar.list_events` | Google Calendar | legacy, superseded by gws |
-| `calendar.get_event` | Google Calendar | legacy |
-| `calendar.create_event` | Google Calendar | legacy |
+| `calendar.list_events` | CalDAV | any CalDAV server |
+| `calendar.get_event` | CalDAV | get by UID |
+| `calendar.create_event` | CalDAV | |
 | `email.list_messages` | IMAP | |
 | `email.get_message` | IMAP | |
 | `email.send_message` | SMTP | |

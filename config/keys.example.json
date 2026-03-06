@@ -1,9 +1,9 @@
 {
-  "google_calendar": {
-    "client_id": "YOUR_GOOGLE_OAUTH2_CLIENT_ID.apps.googleusercontent.com",
-    "client_secret": "YOUR_GOOGLE_OAUTH2_CLIENT_SECRET",
-    "refresh_token": "YOUR_OAUTH2_REFRESH_TOKEN",
-    "calendar_id": "primary"
+  "calendar": {
+    "caldav_url": "https://caldav.fastmail.com/dav/",
+    "username": "you@example.com",
+    "password": "YOUR_APP_PASSWORD",
+    "calendar_url": "https://caldav.fastmail.com/dav/calendars/user/you@example.com/YOUR_CALENDAR_ID/"
   },
   "email": {
     "imap": {

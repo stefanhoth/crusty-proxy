@@ -1,6 +1,6 @@
 {
   "services": {
-    "google_calendar": {
+    "calendar": {
       "enabled": false,
       "allowed_operations": [
         "list_events",

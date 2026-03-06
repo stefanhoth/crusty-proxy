@@ -43,16 +43,16 @@ try {
 
 // ── Local service instances (direct API wrappers) ────────────────────────────
 
-const calendar = keys.google_calendar ? new CalendarService(keys.google_calendar) : null;
+const calendar = keys.calendar ? new CalendarService(keys.calendar) : null;
 const email    = keys.email           ? new EmailService(keys.email)               : null;
 const places   = keys.google_places   ? new PlacesService(keys.google_places)      : null;
 const gemini   = keys.gemini          ? new GeminiService(keys.gemini)             : null;
 
 log.info("Services configured:", {
-  google_calendar: calendar !== null,
-  email:           email    !== null,
-  google_places:   places   !== null,
-  gemini:          gemini   !== null,
+  calendar:      calendar !== null,
+  email:         email    !== null,
+  google_places: places   !== null,
+  gemini:        gemini   !== null,
 });
 
 // ── Upstream MCP clients (official hosted MCP servers) ───────────────────────
@@ -94,12 +94,12 @@ async function initUpstreams(): Promise<void> {
 function buildTools(al: Allowlist): Tool[] {
   const tools: Tool[] = [];
 
-  if (al.services.google_calendar?.enabled) {
-    const ops = al.services.google_calendar.allowed_operations;
+  if (al.services.calendar?.enabled) {
+    const ops = al.services.calendar.allowed_operations;
     if (ops.includes("list_events")) {
       tools.push({
         name: "calendar.list_events",
-        description: "List Google Calendar events in a date range",
+        description: "List calendar events in a date range (CalDAV)",
         inputSchema: {
           type: "object",
           properties: {
@@ -115,11 +115,11 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("get_event")) {
       tools.push({
         name: "calendar.get_event",
-        description: "Get a specific Google Calendar event by ID",
+        description: "Get a specific calendar event by its UID (CalDAV)",
         inputSchema: {
           type: "object",
           properties: {
-            event_id: { type: "string", description: "The Google Calendar event ID" },
+            event_id: { type: "string", description: "The event UID (from list_events)" },
           },
           required: ["event_id"],
         },
@@ -128,7 +128,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("create_event")) {
       tools.push({
         name: "calendar.create_event",
-        description: "Create a new event in Google Calendar",
+        description: "Create a new event in the CalDAV calendar",
         inputSchema: {
           type: "object",
           properties: {
@@ -375,20 +375,20 @@ async function handleToolCall(
 
   log.info(`Tool call: ${name}`);
   try {
-    // Google Calendar
+    // CalDAV calendar
     if (name === "calendar.list_events") {
-      if (!isOperationAllowed(al, "google_calendar", "list_events")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "list_events")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.listEvents(args as Parameters<typeof calendar.listEvents>[0]) }] };
     }
     if (name === "calendar.get_event") {
-      if (!isOperationAllowed(al, "google_calendar", "get_event")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "get_event")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.getEvent(args as Parameters<typeof calendar.getEvent>[0]) }] };
     }
     if (name === "calendar.create_event") {
-      if (!isOperationAllowed(al, "google_calendar", "create_event")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "create_event")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.createEvent(args as Parameters<typeof calendar.createEvent>[0]) }] };
     }
 
@@ -543,7 +543,7 @@ app.get("/health", (_req, res) => {
     status: "ok",
     version,
     services: {
-      google_calendar: calendar !== null && (allowlist.services.google_calendar?.enabled ?? false),
+      calendar: calendar !== null && (allowlist.services.calendar?.enabled ?? false),
       email: email !== null && (allowlist.services.email?.enabled ?? false),
       todoist: upstreams.has("todoist"),
       google_places: places !== null && (allowlist.services.google_places?.enabled ?? false),

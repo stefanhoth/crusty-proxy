@@ -2,11 +2,13 @@ import { z } from "zod";
 
 // ── Config schemas ──────────────────────────────────────────────────────────
 
-export const GoogleCalendarKeysSchema = z.object({
-  client_id: z.string(),
-  client_secret: z.string(),
-  refresh_token: z.string(),
-  calendar_id: z.string().default("primary"),
+export const CalDavKeysSchema = z.object({
+  /** CalDAV server URL, e.g. https://caldav.fastmail.com/dav/ */
+  caldav_url: z.string().url(),
+  username: z.string(),
+  password: z.string(),
+  /** Optional specific calendar URL — if omitted, the first discovered calendar is used */
+  calendar_url: z.string().url().optional(),
 });
 
 export const EmailKeysSchema = z.object({
@@ -42,7 +44,7 @@ export const GeminiKeysSchema = z.object({
 });
 
 export const KeysSchema = z.object({
-  google_calendar: GoogleCalendarKeysSchema.optional(),
+  calendar: CalDavKeysSchema.optional(),
   email: EmailKeysSchema.optional(),
   todoist: TodoistKeysSchema.optional(),
   google_places: GooglePlacesKeysSchema.optional(),
@@ -57,7 +59,7 @@ export const ServiceAllowlistSchema = z.object({
 export const AllowlistSchema = z.object({
   services: z.object({
     // Direct API services (own credentials in keys.json)
-    google_calendar: ServiceAllowlistSchema.optional(),
+    calendar: ServiceAllowlistSchema.optional(),
     email: ServiceAllowlistSchema.optional(),
     todoist: ServiceAllowlistSchema.optional(),
     google_places: ServiceAllowlistSchema.optional(),
@@ -80,6 +82,7 @@ export const GWS_SERVICE_KEYS = [
   "gws_sheets", "gws_tasks", "gws_chat",
 ] as const satisfies ReadonlyArray<keyof z.infer<typeof AllowlistSchema>["services"]>;
 
+export type CalDavKeys = z.infer<typeof CalDavKeysSchema>;
 export type Keys = z.infer<typeof KeysSchema>;
 export type Allowlist = z.infer<typeof AllowlistSchema>;
 

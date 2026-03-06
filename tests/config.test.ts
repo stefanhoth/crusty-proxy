@@ -9,17 +9,17 @@ import type { Allowlist } from "../src/types.js";
 describe("isOperationAllowed", () => {
   const al: Allowlist = {
     services: {
-      google_calendar: { enabled: true, allowed_operations: ["list_events", "get_event"] },
+      calendar: { enabled: true, allowed_operations: ["list_events", "get_event"] },
       email: { enabled: false, allowed_operations: ["list_messages", "send_message"] },
     },
   };
 
   it("allows an operation in the allowlist for an enabled service", () => {
-    expect(isOperationAllowed(al, "google_calendar", "list_events")).toBe(true);
+    expect(isOperationAllowed(al, "calendar", "list_events")).toBe(true);
   });
 
   it("blocks an operation not in the allowlist", () => {
-    expect(isOperationAllowed(al, "google_calendar", "delete_event")).toBe(false);
+    expect(isOperationAllowed(al, "calendar", "delete_event")).toBe(false);
   });
 
   it("blocks all operations for a disabled service", () => {
@@ -53,7 +53,7 @@ describe("loadKeys", () => {
     writeFileSync(path, "{}");
     process.env.KEYS_PATH = path;
     const keys = loadKeys();
-    expect(keys.google_calendar).toBeUndefined();
+    expect(keys.calendar).toBeUndefined();
     expect(keys.email).toBeUndefined();
   });
 
@@ -105,10 +105,10 @@ describe("loadAllowlist", () => {
     const path = join(tmpDir, "allowlist.json");
     writeFileSync(
       path,
-      JSON.stringify({ services: { google_calendar: { allowed_operations: ["list_events"] } } }),
+      JSON.stringify({ services: { calendar: { allowed_operations: ["list_events"] } } }),
     );
     process.env.ALLOWLIST_PATH = path;
     const al = loadAllowlist();
-    expect(al.services.google_calendar?.enabled).toBe(true);
+    expect(al.services.calendar?.enabled).toBe(true);
   });
 });
