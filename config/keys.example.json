@@ -5,21 +5,19 @@
     "password": "YOUR_APP_PASSWORD",
     "calendar_url": "https://caldav.fastmail.com/dav/calendars/user/you@example.com/YOUR_CALENDAR_ID/"
   },
-  "email": {
-    "imap": {
-      "host": "imap.example.com",
-      "port": 993,
-      "tls": true,
-      "username": "you@example.com",
-      "password": "YOUR_IMAP_PASSWORD"
-    },
-    "smtp": {
-      "host": "smtp.example.com",
-      "port": 587,
-      "secure": false,
-      "username": "you@example.com",
-      "password": "YOUR_SMTP_PASSWORD"
-    }
+  "email_imap": {
+    "host": "imap.example.com",
+    "port": 993,
+    "tls": true,
+    "username": "you@example.com",
+    "password": "YOUR_IMAP_PASSWORD"
+  },
+  "email_smtp": {
+    "host": "smtp.example.com",
+    "port": 587,
+    "secure": false,
+    "username": "you@example.com",
+    "password": "YOUR_SMTP_PASSWORD"
   },
   "todoist": {
     "mcp_url": "https://ai.todoist.net/mcp",

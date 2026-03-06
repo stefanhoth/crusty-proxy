@@ -10,7 +10,8 @@ describe("isOperationAllowed", () => {
   const al: Allowlist = {
     services: {
       calendar: { enabled: true, allowed_operations: ["list_events", "get_event"] },
-      email: { enabled: false, allowed_operations: ["list_messages", "send_message"] },
+      email_imap: { enabled: false, allowed_operations: ["list_messages"] },
+      email_smtp: { enabled: false, allowed_operations: ["send_message"] },
     },
   };
 
@@ -23,8 +24,8 @@ describe("isOperationAllowed", () => {
   });
 
   it("blocks all operations for a disabled service", () => {
-    expect(isOperationAllowed(al, "email", "list_messages")).toBe(false);
-    expect(isOperationAllowed(al, "email", "send_message")).toBe(false);
+    expect(isOperationAllowed(al, "email_imap", "list_messages")).toBe(false);
+    expect(isOperationAllowed(al, "email_smtp", "send_message")).toBe(false);
   });
 
   it("blocks operations for an unconfigured service", () => {
@@ -54,7 +55,8 @@ describe("loadKeys", () => {
     process.env.KEYS_PATH = path;
     const keys = loadKeys();
     expect(keys.calendar).toBeUndefined();
-    expect(keys.email).toBeUndefined();
+    expect(keys.email_imap).toBeUndefined();
+    expect(keys.email_smtp).toBeUndefined();
   });
 
   it("parses a valid todoist keys entry", () => {

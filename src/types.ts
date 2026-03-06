@@ -11,21 +11,20 @@ export const CalDavKeysSchema = z.object({
   calendar_url: z.string().url().optional(),
 });
 
-export const EmailKeysSchema = z.object({
-  imap: z.object({
-    host: z.string(),
-    port: z.number().int().positive(),
-    tls: z.boolean().default(true),
-    username: z.string(),
-    password: z.string(),
-  }),
-  smtp: z.object({
-    host: z.string(),
-    port: z.number().int().positive(),
-    secure: z.boolean().default(false),
-    username: z.string(),
-    password: z.string(),
-  }),
+export const ImapKeysSchema = z.object({
+  host: z.string(),
+  port: z.number().int().positive(),
+  tls: z.boolean().default(true),
+  username: z.string(),
+  password: z.string(),
+});
+
+export const SmtpKeysSchema = z.object({
+  host: z.string(),
+  port: z.number().int().positive(),
+  secure: z.boolean().default(false),
+  username: z.string(),
+  password: z.string(),
 });
 
 export const TodoistKeysSchema = z.object({
@@ -45,7 +44,8 @@ export const GeminiKeysSchema = z.object({
 
 export const KeysSchema = z.object({
   calendar: CalDavKeysSchema.optional(),
-  email: EmailKeysSchema.optional(),
+  email_imap: ImapKeysSchema.optional(),
+  email_smtp: SmtpKeysSchema.optional(),
   todoist: TodoistKeysSchema.optional(),
   google_places: GooglePlacesKeysSchema.optional(),
   gemini: GeminiKeysSchema.optional(),
@@ -60,7 +60,8 @@ export const AllowlistSchema = z.object({
   services: z.object({
     // Direct API services (own credentials in keys.json)
     calendar: ServiceAllowlistSchema.optional(),
-    email: ServiceAllowlistSchema.optional(),
+    email_imap: ServiceAllowlistSchema.optional(),
+    email_smtp: ServiceAllowlistSchema.optional(),
     todoist: ServiceAllowlistSchema.optional(),
     google_places: ServiceAllowlistSchema.optional(),
     gemini: ServiceAllowlistSchema.optional(),
@@ -83,6 +84,8 @@ export const GWS_SERVICE_KEYS = [
 ] as const satisfies ReadonlyArray<keyof z.infer<typeof AllowlistSchema>["services"]>;
 
 export type CalDavKeys = z.infer<typeof CalDavKeysSchema>;
+export type ImapKeys = z.infer<typeof ImapKeysSchema>;
+export type SmtpKeys = z.infer<typeof SmtpKeysSchema>;
 export type Keys = z.infer<typeof KeysSchema>;
 export type Allowlist = z.infer<typeof AllowlistSchema>;
 

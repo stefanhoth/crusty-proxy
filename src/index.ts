@@ -9,7 +9,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { loadKeys, loadAllowlist, isOperationAllowed } from "./config.js";
 import { CalendarService } from "./services/calendar.js";
-import { EmailService } from "./services/email.js";
+import { ImapService } from "./services/imap.js";
+import { SmtpService } from "./services/smtp.js";
 import { createTodoistUpstream } from "./services/todoist.js";
 import { createGwsUpstream } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
@@ -43,14 +44,16 @@ try {
 
 // ── Local service instances (direct API wrappers) ────────────────────────────
 
-const calendar = keys.calendar ? new CalendarService(keys.calendar) : null;
-const email    = keys.email           ? new EmailService(keys.email)               : null;
-const places   = keys.google_places   ? new PlacesService(keys.google_places)      : null;
-const gemini   = keys.gemini          ? new GeminiService(keys.gemini)             : null;
+const calendar = keys.calendar    ? new CalendarService(keys.calendar)    : null;
+const imap     = keys.email_imap  ? new ImapService(keys.email_imap)      : null;
+const smtp     = keys.email_smtp  ? new SmtpService(keys.email_smtp)      : null;
+const places   = keys.google_places ? new PlacesService(keys.google_places) : null;
+const gemini   = keys.gemini      ? new GeminiService(keys.gemini)        : null;
 
 log.info("Credentials loaded:", {
   calendar:      calendar !== null,
-  email:         email    !== null,
+  email_imap:    imap     !== null,
+  email_smtp:    smtp     !== null,
   google_places: places   !== null,
   gemini:        gemini   !== null,
 });
@@ -149,12 +152,12 @@ function buildTools(al: Allowlist): Tool[] {
     }
   }
 
-  if (al.services.email?.enabled) {
-    const ops = al.services.email.allowed_operations;
+  if (al.services.email_imap?.enabled) {
+    const ops = al.services.email_imap.allowed_operations;
     if (ops.includes("list_messages")) {
       tools.push({
-        name: "email.list_messages",
-        description: "List email messages from IMAP inbox",
+        name: "email_imap.list_messages",
+        description: "List email messages from an IMAP mailbox",
         inputSchema: {
           type: "object",
           properties: {
@@ -167,7 +170,7 @@ function buildTools(al: Allowlist): Tool[] {
     }
     if (ops.includes("get_message")) {
       tools.push({
-        name: "email.get_message",
+        name: "email_imap.get_message",
         description: "Get the full content of an email by UID",
         inputSchema: {
           type: "object",
@@ -179,9 +182,13 @@ function buildTools(al: Allowlist): Tool[] {
         },
       });
     }
+  }
+
+  if (al.services.email_smtp?.enabled) {
+    const ops = al.services.email_smtp.allowed_operations;
     if (ops.includes("send_message")) {
       tools.push({
-        name: "email.send_message",
+        name: "email_smtp.send_message",
         description: "Send an email via SMTP",
         inputSchema: {
           type: "object",
@@ -392,21 +399,23 @@ async function handleToolCall(
       return { content: [{ type: "text", text: await calendar.createEvent(args as Parameters<typeof calendar.createEvent>[0]) }] };
     }
 
-    // Email
-    if (name === "email.list_messages") {
-      if (!isOperationAllowed(al, "email", "list_messages")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.listMessages(args as Parameters<typeof email.listMessages>[0]) }] };
+    // IMAP
+    if (name === "email_imap.list_messages") {
+      if (!isOperationAllowed(al, "email_imap", "list_messages")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.listMessages(args as Parameters<typeof imap.listMessages>[0]) }] };
     }
-    if (name === "email.get_message") {
-      if (!isOperationAllowed(al, "email", "get_message")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.getMessage(args as Parameters<typeof email.getMessage>[0]) }] };
+    if (name === "email_imap.get_message") {
+      if (!isOperationAllowed(al, "email_imap", "get_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.getMessage(args as Parameters<typeof imap.getMessage>[0]) }] };
     }
-    if (name === "email.send_message") {
-      if (!isOperationAllowed(al, "email", "send_message")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.sendMessage(args as Parameters<typeof email.sendMessage>[0]) }] };
+
+    // SMTP
+    if (name === "email_smtp.send_message") {
+      if (!isOperationAllowed(al, "email_smtp", "send_message")) return err("Operation not allowed");
+      if (!smtp) return err("SMTP not configured");
+      return { content: [{ type: "text", text: await smtp.sendMessage(args as Parameters<typeof smtp.sendMessage>[0]) }] };
     }
 
     // Places (via goplaces CLI)
@@ -553,8 +562,9 @@ app.get("/health", async (req, res) => {
     status: "ok",
     version,
     services: {
-      calendar: calendar !== null && (allowlist.services.calendar?.enabled ?? false),
-      email: email !== null && (allowlist.services.email?.enabled ?? false),
+      calendar:   calendar !== null && (allowlist.services.calendar?.enabled ?? false),
+      email_imap: imap     !== null && (allowlist.services.email_imap?.enabled ?? false),
+      email_smtp: smtp     !== null && (allowlist.services.email_smtp?.enabled ?? false),
       todoist: upstreams.has("todoist"),
       google_places: places !== null && (allowlist.services.google_places?.enabled ?? false),
       gemini: gemini !== null && (allowlist.services.gemini?.enabled ?? false),
@@ -575,7 +585,8 @@ async function main(): Promise<void> {
 
   log.info("Services active:", {
     calendar:      calendar !== null && (allowlist.services.calendar?.enabled ?? false),
-    email:         email    !== null && (allowlist.services.email?.enabled ?? false),
+    email_imap:    imap     !== null && (allowlist.services.email_imap?.enabled ?? false),
+    email_smtp:    smtp     !== null && (allowlist.services.email_smtp?.enabled ?? false),
     google_places: places   !== null && (allowlist.services.google_places?.enabled ?? false),
     gemini:        gemini   !== null && (allowlist.services.gemini?.enabled ?? false),
     todoist:       upstreams.has("todoist"),

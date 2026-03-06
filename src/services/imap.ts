@@ -1,21 +1,17 @@
 import { ImapFlow } from "imapflow";
-import nodemailer from "nodemailer";
-import type { EmailKeysSchema } from "../types.js";
-import type { z } from "zod";
+import type { ImapKeys } from "../types.js";
 
-type EmailKeys = z.infer<typeof EmailKeysSchema>;
+export class ImapService {
+  constructor(private keys: ImapKeys) {}
 
-export class EmailService {
-  constructor(private keys: EmailKeys) {}
-
-  private createImapClient(): ImapFlow {
+  private createClient(): ImapFlow {
     return new ImapFlow({
-      host: this.keys.imap.host,
-      port: this.keys.imap.port,
-      secure: this.keys.imap.tls,
+      host: this.keys.host,
+      port: this.keys.port,
+      secure: this.keys.tls,
       auth: {
-        user: this.keys.imap.username,
-        pass: this.keys.imap.password,
+        user: this.keys.username,
+        pass: this.keys.password,
       },
       logger: false,
     });
@@ -26,7 +22,7 @@ export class EmailService {
     limit?: number;
     search?: string;
   }): Promise<string> {
-    const client = this.createImapClient();
+    const client = this.createClient();
     await client.connect();
     try {
       const folder = args.folder ?? "INBOX";
@@ -37,7 +33,6 @@ export class EmailService {
           : { all: true };
 
         const result = await client.search(searchCriteria, { uid: true });
-        // imapflow.search returns number[] | false — false means no messages
         const uids: number[] = Array.isArray(result) ? result : [];
         const limit = args.limit ?? 20;
         const recentUids = uids.slice(-limit);
@@ -74,7 +69,7 @@ export class EmailService {
   }
 
   async getMessage(args: { uid: number; folder?: string }): Promise<string> {
-    const client = this.createImapClient();
+    const client = this.createClient();
     await client.connect();
     try {
       const folder = args.folder ?? "INBOX";
@@ -87,7 +82,6 @@ export class EmailService {
         );
         if (!msg) throw new Error(`Message UID ${args.uid} not found`);
 
-        // Separate fetch for raw source
         const textMsg = await client.fetchOne(
           String(args.uid),
           { source: true },
@@ -121,38 +115,5 @@ export class EmailService {
     } finally {
       await client.logout();
     }
-  }
-
-  async sendMessage(args: {
-    to: string | string[];
-    subject: string;
-    text: string;
-    html?: string;
-    cc?: string | string[];
-    bcc?: string | string[];
-    reply_to?: string;
-  }): Promise<string> {
-    const transporter = nodemailer.createTransport({
-      host: this.keys.smtp.host,
-      port: this.keys.smtp.port,
-      secure: this.keys.smtp.secure,
-      auth: {
-        user: this.keys.smtp.username,
-        pass: this.keys.smtp.password,
-      },
-    });
-
-    const info = await transporter.sendMail({
-      from: this.keys.smtp.username,
-      to: Array.isArray(args.to) ? args.to.join(", ") : args.to,
-      subject: args.subject,
-      text: args.text,
-      html: args.html,
-      cc: args.cc ? (Array.isArray(args.cc) ? args.cc.join(", ") : args.cc) : undefined,
-      bcc: args.bcc ? (Array.isArray(args.bcc) ? args.bcc.join(", ") : args.bcc) : undefined,
-      replyTo: args.reply_to,
-    });
-
-    return JSON.stringify({ messageId: info.messageId, accepted: info.accepted }, null, 2);
   }
 }

@@ -8,11 +8,16 @@
         "create_event"
       ]
     },
-    "email": {
+    "email_imap": {
       "enabled": false,
       "allowed_operations": [
         "list_messages",
-        "get_message",
+        "get_message"
+      ]
+    },
+    "email_smtp": {
+      "enabled": false,
+      "allowed_operations": [
         "send_message"
       ]
     },
