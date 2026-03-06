@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.5.1...v1.6.0) (2026-03-06)
+
+
+### Features
+
+* **health:** list full tool names per category in ?check, add ping() tests ([3a54f30](https://github.com/stefanhoth/crusty-proxy/commit/3a54f30e8918f75e5559d23afa2faa2c21022016))
+
 ## [1.5.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.5.0...v1.5.1) (2026-03-06)
 
 
