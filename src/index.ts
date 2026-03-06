@@ -538,7 +538,17 @@ app.post("/mcp", async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (req, res) => {
+  const deep = "check" in req.query;
+
+  const checks: Record<string, boolean> | undefined = deep
+    ? Object.fromEntries(
+        await Promise.all(
+          [...upstreams.entries()].map(async ([name, client]) => [name, await client.ping()]),
+        ),
+      )
+    : undefined;
+
   res.json({
     status: "ok",
     version,
@@ -551,6 +561,7 @@ app.get("/health", (_req, res) => {
       gws: upstreams.has("gws"),
     },
     upstream_services: [...upstreams.keys()],
+    ...(checks !== undefined && { checks }),
     tools: buildTools(allowlist).length,
   });
 });

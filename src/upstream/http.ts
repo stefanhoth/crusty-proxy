@@ -69,6 +69,15 @@ export class HttpUpstreamClient implements UpstreamClient {
     return { content, isError: result.isError === true };
   }
 
+  async ping(): Promise<boolean> {
+    try {
+      await this.client.listTools();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async close(): Promise<void> {
     await this.client.close();
   }

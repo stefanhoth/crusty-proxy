@@ -12,5 +12,7 @@ export interface UpstreamClient {
   /** Whether this client owns the given (prefixed) tool name. */
   owns(toolName: string): boolean;
   callTool(prefixedName: string, args: Record<string, unknown>): Promise<ToolResult>;
+  /** Live reachability check — calls listTools() on the upstream. */
+  ping(): Promise<boolean>;
   close(): Promise<void>;
 }
