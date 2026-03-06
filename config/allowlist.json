@@ -19,11 +19,32 @@
     "todoist": {
       "enabled": true,
       "allowed_operations": [
-        "get_tasks",
-        "get_task",
-        "create_task",
-        "close_task",
-        "get_projects"
+        "find-tasks",
+        "find-tasks-by-date",
+        "find-completed-tasks",
+        "add-tasks",
+        "complete-tasks",
+        "update-tasks",
+        "find-projects",
+        "add-projects",
+        "update-projects",
+        "project-management",
+        "project-move",
+        "find-sections",
+        "add-sections",
+        "update-sections",
+        "find-comments",
+        "add-comments",
+        "update-comments",
+        "find-activity",
+        "get-overview",
+        "fetch-object",
+        "user-info",
+        "find-project-collaborators",
+        "manage-assignments",
+        "list-workspaces",
+        "search",
+        "fetch"
       ]
     },
     "google_places": {

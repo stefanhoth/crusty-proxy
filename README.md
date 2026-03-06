@@ -280,11 +280,32 @@ npx mcporter list https://ai.todoist.net/mcp
 | `email.list_messages` | IMAP | |
 | `email.get_message` | IMAP | |
 | `email.send_message` | SMTP | |
-| `todoist.get_tasks` | Todoist MCP | upstream tool names may vary |
-| `todoist.get_task` | Todoist MCP | |
-| `todoist.create_task` | Todoist MCP | |
-| `todoist.close_task` | Todoist MCP | |
-| `todoist.get_projects` | Todoist MCP | |
+| `todoist.find-tasks` | Todoist MCP | |
+| `todoist.find-tasks-by-date` | Todoist MCP | |
+| `todoist.find-completed-tasks` | Todoist MCP | |
+| `todoist.add-tasks` | Todoist MCP | |
+| `todoist.complete-tasks` | Todoist MCP | |
+| `todoist.update-tasks` | Todoist MCP | |
+| `todoist.find-projects` | Todoist MCP | |
+| `todoist.add-projects` | Todoist MCP | |
+| `todoist.update-projects` | Todoist MCP | |
+| `todoist.project-management` | Todoist MCP | |
+| `todoist.project-move` | Todoist MCP | |
+| `todoist.find-sections` | Todoist MCP | |
+| `todoist.add-sections` | Todoist MCP | |
+| `todoist.update-sections` | Todoist MCP | |
+| `todoist.find-comments` | Todoist MCP | |
+| `todoist.add-comments` | Todoist MCP | |
+| `todoist.update-comments` | Todoist MCP | |
+| `todoist.find-activity` | Todoist MCP | |
+| `todoist.get-overview` | Todoist MCP | |
+| `todoist.fetch-object` | Todoist MCP | |
+| `todoist.user-info` | Todoist MCP | |
+| `todoist.find-project-collaborators` | Todoist MCP | |
+| `todoist.manage-assignments` | Todoist MCP | |
+| `todoist.list-workspaces` | Todoist MCP | |
+| `todoist.search` | Todoist MCP | |
+| `todoist.fetch` | Todoist MCP | |
 | `places.search` | Google Places | |
 | `places.get_details` | Google Places | |
 | `places.nearby` | Google Places | |
@@ -293,7 +314,7 @@ npx mcporter list https://ai.todoist.net/mcp
 | `gemini.generate_image` | Gemini 2.5 Flash | returns image content |
 | `gemini.edit_image` | Gemini 2.5 Flash | returns image content |
 
-Deliberately **not implemented**: delete calendar events, delete emails, delete Todoist tasks.
+Deliberately **not in allowlist**: delete calendar events, delete emails, `todoist.delete-object`.
 
 ---
 
