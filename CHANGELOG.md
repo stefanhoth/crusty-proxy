@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.6...v1.2.0) (2026-03-06)
+
+
+### Features
+
+* **gws:** add Google Workspace CLI as stdio upstream for Calendar and Gmail ([b1601cd](https://github.com/stefanhoth/crusty-proxy/commit/b1601cd6648019a0cb11caa4a2e638ab0e2f46ca))
+
 ## [1.1.6](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.5...v1.1.6) (2026-03-06)
 
 
