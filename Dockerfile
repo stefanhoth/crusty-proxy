@@ -22,8 +22,10 @@ COPY src/ ./src/
 COPY --from=goplaces-builder /go/bin/goplaces /usr/local/bin/goplaces
 
 # gws (Google Workspace CLI) — npm package bundles pre-built Linux x64 binary
+# Pinned to 0.7.0: v0.8.0+ removes the stdio MCP transport we rely on
+# (see https://github.com/googleworkspace/cli/pull/275)
 RUN apk add --no-cache nodejs npm && \
-    npm install -g @googleworkspace/cli && \
+    npm install -g @googleworkspace/cli@0.7.0 && \
     apk del nodejs npm
 
 # Config dir — actual files are bind-mounted read-only at runtime

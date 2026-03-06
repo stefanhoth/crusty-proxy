@@ -8,6 +8,11 @@
   ],
   "packageRules": [
     {
+      "matchPackageNames": ["@googleworkspace/cli"],
+      "allowedVersions": "0.7.0",
+      "description": "Pinned: v0.8.0+ removes stdio MCP transport (see googleworkspace/cli#275)"
+    },
+    {
       "matchManagers": [
         "npm"
       ],
