@@ -299,7 +299,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("generate_image")) {
       tools.push({
         name: "gemini.generate_image",
-        description: "Generate an image using Google Imagen 3",
+        description: "Generate an image using Gemini 2.5 Flash",
         inputSchema: {
           type: "object",
           properties: {

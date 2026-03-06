@@ -123,11 +123,10 @@ Scope: https://www.googleapis.com/auth/calendar
 2. Create an API key, restrict it to the Places API
 3. Put the key into `keys.json` under `google_places.api_key`
 
-### Gemini / Imagen
+### Gemini
 
 1. Get an API key from Google AI Studio: https://aistudio.google.com/apikey
-2. Imagen 3 requires billing enabled on your Google Cloud project
-3. Put the key into `keys.json` under `gemini.api_key`
+2. Put the key into `keys.json` under `gemini.api_key`
 
 ### Todoist (official hosted MCP)
 
@@ -231,7 +230,7 @@ npx mcporter list https://ai.todoist.net/mcp
 | `places.nearby` | Google Places | |
 | `places.autocomplete` | Google Places | |
 | `places.resolve` | Google Places | |
-| `gemini.generate_image` | Imagen 3 | returns image content |
+| `gemini.generate_image` | Gemini 2.5 Flash | returns image content |
 | `gemini.edit_image` | Gemini 2.5 Flash | returns image content |
 
 Deliberately **not implemented**: delete calendar events, delete emails, delete Todoist tasks.
