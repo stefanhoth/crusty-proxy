@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.3.0...v1.3.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **logging:** align startup log with /health — show enabled state, include upstreams ([fce2bce](https://github.com/stefanhoth/crusty-proxy/commit/fce2bce24181c6b9d61bb6b8d8673ca5f7d08986))
+
 # [1.3.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.2.0...v1.3.0) (2026-03-06)
 
 
