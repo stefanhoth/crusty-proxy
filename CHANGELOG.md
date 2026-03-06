@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.8.0...v1.9.0) (2026-03-06)
+
+
+### Features
+
+* **imap:** add folder and message management operations ([9ec7c1c](https://github.com/stefanhoth/crusty-proxy/commit/9ec7c1c2fbc9cec70837a3f76aeaa6f91cadaf66))
+
 # [1.8.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.7.0...v1.8.0) (2026-03-06)
 
 
