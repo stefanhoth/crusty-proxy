@@ -1,6 +1,16 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { ToolResult } from "../types.js";
 
+export interface UpstreamPingResult {
+  reachable: boolean;
+  /** Tools present in upstream AND in allowlist. */
+  tools_active: number;
+  /** Tools present in upstream but NOT in allowlist. */
+  tools_blocked: number;
+  /** Tools in allowlist but NOT present in upstream (stale or wrong names). */
+  tools_unknown: number;
+}
+
 /**
  * Common interface for upstream MCP clients, regardless of transport.
  * Implementations: HttpUpstreamClient (Streamable HTTP), StdioUpstreamClient (stdio process).
@@ -12,7 +22,7 @@ export interface UpstreamClient {
   /** Whether this client owns the given (prefixed) tool name. */
   owns(toolName: string): boolean;
   callTool(prefixedName: string, args: Record<string, unknown>): Promise<ToolResult>;
-  /** Live reachability check — calls listTools() on the upstream. */
-  ping(): Promise<boolean>;
+  /** Live reachability check — calls listTools() and returns tool counts. */
+  ping(): Promise<UpstreamPingResult>;
   close(): Promise<void>;
 }

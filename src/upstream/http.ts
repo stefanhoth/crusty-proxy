@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { TextContent, ImageContent, ToolResult } from "../types.js";
-import type { UpstreamClient } from "./types.js";
+import type { UpstreamClient, UpstreamPingResult } from "./types.js";
 
 export interface HttpUpstreamConfig {
   url: string;
@@ -69,12 +69,18 @@ export class HttpUpstreamClient implements UpstreamClient {
     return { content, isError: result.isError === true };
   }
 
-  async ping(): Promise<boolean> {
+  async ping(): Promise<UpstreamPingResult> {
     try {
-      await this.client.listTools();
-      return true;
+      const response = await this.client.listTools();
+      const upstreamNames = new Set(response.tools.map((t) => t.name));
+      return {
+        reachable: true,
+        tools_active:  response.tools.filter((t) =>  this.allowedTools.has(t.name)).length,
+        tools_blocked: response.tools.filter((t) => !this.allowedTools.has(t.name)).length,
+        tools_unknown: [...this.allowedTools].filter((n) => !upstreamNames.has(n)).length,
+      };
     } catch {
-      return false;
+      return { reachable: false, tools_active: 0, tools_blocked: 0, tools_unknown: 0 };
     }
   }
 
@@ -84,16 +90,21 @@ export class HttpUpstreamClient implements UpstreamClient {
 
   private async fetchTools(): Promise<void> {
     const response = await this.client.listTools();
+    const upstreamNames = new Set(response.tools.map((t) => t.name));
     const blocked = response.tools.filter((t) => !this.allowedTools.has(t.name)).map((t) => t.name);
+    const unknown = [...this.allowedTools].filter((n) => !upstreamNames.has(n));
 
     this._tools = response.tools
       .filter((t) => this.allowedTools.has(t.name))
       .map((t) => ({ ...t, name: `${this.prefix}${t.name}` }));
 
     const ts = () => new Date().toISOString();
-    console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" connected — ${this._tools.length}/${response.tools.length} tools active (allowlist)`);
+    console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" connected — ${this._tools.length} active, ${blocked.length} blocked, ${unknown.length} unknown (not in upstream)`);
     if (blocked.length > 0) {
-      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" blocked tools: ${blocked.join(", ")}`);
+      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" blocked: ${blocked.join(", ")}`);
+    }
+    if (unknown.length > 0) {
+      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" unknown (stale allowlist entries): ${unknown.join(", ")}`);
     }
   }
 
