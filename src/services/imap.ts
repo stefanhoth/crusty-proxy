@@ -177,4 +177,97 @@ export class ImapService {
       await client.logout();
     }
   }
+
+  async listFolders(): Promise<string> {
+    const client = this.createClient();
+    await client.connect();
+    try {
+      const folders = await client.list();
+      return JSON.stringify(
+        folders.map((f) => ({
+          path: f.path,
+          name: f.name,
+          delimiter: f.delimiter,
+          flags: [...(f.flags ?? [])],
+        })),
+        null,
+        2,
+      );
+    } finally {
+      await client.logout();
+    }
+  }
+
+  async moveMessage(args: { uid: number; destination: string; folder?: string }): Promise<string> {
+    const client = this.createClient();
+    await client.connect();
+    try {
+      const folder = args.folder ?? "INBOX";
+      const lock = await client.getMailboxLock(folder);
+      try {
+        await client.messageMove(String(args.uid), args.destination, { uid: true });
+        return JSON.stringify({ moved: true, uid: args.uid, destination: args.destination });
+      } finally {
+        lock.release();
+      }
+    } finally {
+      await client.logout();
+    }
+  }
+
+  async copyMessage(args: { uid: number; destination: string; folder?: string }): Promise<string> {
+    const client = this.createClient();
+    await client.connect();
+    try {
+      const folder = args.folder ?? "INBOX";
+      const lock = await client.getMailboxLock(folder);
+      try {
+        await client.messageCopy(String(args.uid), args.destination, { uid: true });
+        return JSON.stringify({ copied: true, uid: args.uid, destination: args.destination });
+      } finally {
+        lock.release();
+      }
+    } finally {
+      await client.logout();
+    }
+  }
+
+  private async setFlag(uid: number, folder: string, flag: string, set: boolean): Promise<void> {
+    const client = this.createClient();
+    await client.connect();
+    try {
+      const lock = await client.getMailboxLock(folder);
+      try {
+        if (set) {
+          await client.messageFlagsAdd(String(uid), [flag], { uid: true });
+        } else {
+          await client.messageFlagsRemove(String(uid), [flag], { uid: true });
+        }
+      } finally {
+        lock.release();
+      }
+    } finally {
+      await client.logout();
+    }
+  }
+
+  async markRead(args: { uid: number; folder?: string }): Promise<string> {
+    await this.setFlag(args.uid, args.folder ?? "INBOX", "\\Seen", true);
+    return JSON.stringify({ uid: args.uid, seen: true });
+  }
+
+  async markUnread(args: { uid: number; folder?: string }): Promise<string> {
+    await this.setFlag(args.uid, args.folder ?? "INBOX", "\\Seen", false);
+    return JSON.stringify({ uid: args.uid, seen: false });
+  }
+
+  async flagMessage(args: { uid: number; folder?: string }): Promise<string> {
+    await this.setFlag(args.uid, args.folder ?? "INBOX", "\\Flagged", true);
+    return JSON.stringify({ uid: args.uid, flagged: true });
+  }
+
+  async unflagMessage(args: { uid: number; folder?: string }): Promise<string> {
+    await this.setFlag(args.uid, args.folder ?? "INBOX", "\\Flagged", false);
+    return JSON.stringify({ uid: args.uid, flagged: false });
+  }
 }

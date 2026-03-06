@@ -154,6 +154,13 @@ function buildTools(al: Allowlist): Tool[] {
 
   if (al.services.email_imap?.enabled) {
     const ops = al.services.email_imap.allowed_operations;
+    if (ops.includes("list_folders")) {
+      tools.push({
+        name: "email_imap.list_folders",
+        description: "List all IMAP folders/mailboxes on the server",
+        inputSchema: { type: "object", properties: {} },
+      });
+    }
     if (ops.includes("list_messages")) {
       tools.push({
         name: "email_imap.list_messages",
@@ -194,6 +201,92 @@ function buildTools(al: Allowlist): Tool[] {
             folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
           },
           required: ["uid", "attachment_index"],
+        },
+      });
+    }
+    if (ops.includes("move_message")) {
+      tools.push({
+        name: "email_imap.move_message",
+        description: "Move an email to a different folder",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            destination: { type: "string", description: "Destination folder path (e.g. 'Archive' or 'INBOX.Archive')" },
+            folder: { type: "string", description: "Source folder (default: INBOX)" },
+          },
+          required: ["uid", "destination"],
+        },
+      });
+    }
+    if (ops.includes("copy_message")) {
+      tools.push({
+        name: "email_imap.copy_message",
+        description: "Copy an email to another folder, leaving the original in place",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            destination: { type: "string", description: "Destination folder path" },
+            folder: { type: "string", description: "Source folder (default: INBOX)" },
+          },
+          required: ["uid", "destination"],
+        },
+      });
+    }
+    if (ops.includes("mark_read")) {
+      tools.push({
+        name: "email_imap.mark_read",
+        description: "Mark an email as read (sets \\Seen flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("mark_unread")) {
+      tools.push({
+        name: "email_imap.mark_unread",
+        description: "Mark an email as unread (removes \\Seen flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("flag_message")) {
+      tools.push({
+        name: "email_imap.flag_message",
+        description: "Star/flag an email (sets \\Flagged flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("unflag_message")) {
+      tools.push({
+        name: "email_imap.unflag_message",
+        description: "Remove star/flag from an email (removes \\Flagged flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
         },
       });
     }
@@ -415,6 +508,11 @@ async function handleToolCall(
     }
 
     // IMAP
+    if (name === "email_imap.list_folders") {
+      if (!isOperationAllowed(al, "email_imap", "list_folders")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.listFolders() }] };
+    }
     if (name === "email_imap.list_messages") {
       if (!isOperationAllowed(al, "email_imap", "list_messages")) return err("Operation not allowed");
       if (!imap) return err("IMAP not configured");
@@ -429,6 +527,36 @@ async function handleToolCall(
       if (!isOperationAllowed(al, "email_imap", "get_attachment")) return err("Operation not allowed");
       if (!imap) return err("IMAP not configured");
       return { content: [{ type: "text", text: await imap.getAttachment(args as Parameters<typeof imap.getAttachment>[0]) }] };
+    }
+    if (name === "email_imap.move_message") {
+      if (!isOperationAllowed(al, "email_imap", "move_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.moveMessage(args as Parameters<typeof imap.moveMessage>[0]) }] };
+    }
+    if (name === "email_imap.copy_message") {
+      if (!isOperationAllowed(al, "email_imap", "copy_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.copyMessage(args as Parameters<typeof imap.copyMessage>[0]) }] };
+    }
+    if (name === "email_imap.mark_read") {
+      if (!isOperationAllowed(al, "email_imap", "mark_read")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.markRead(args as Parameters<typeof imap.markRead>[0]) }] };
+    }
+    if (name === "email_imap.mark_unread") {
+      if (!isOperationAllowed(al, "email_imap", "mark_unread")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.markUnread(args as Parameters<typeof imap.markUnread>[0]) }] };
+    }
+    if (name === "email_imap.flag_message") {
+      if (!isOperationAllowed(al, "email_imap", "flag_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.flagMessage(args as Parameters<typeof imap.flagMessage>[0]) }] };
+    }
+    if (name === "email_imap.unflag_message") {
+      if (!isOperationAllowed(al, "email_imap", "unflag_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.unflagMessage(args as Parameters<typeof imap.unflagMessage>[0]) }] };
     }
 
     // SMTP

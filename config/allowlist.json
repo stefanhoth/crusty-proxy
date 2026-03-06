@@ -11,9 +11,16 @@
     "email_imap": {
       "enabled": false,
       "allowed_operations": [
+        "list_folders",
         "list_messages",
         "get_message",
-        "get_attachment"
+        "get_attachment",
+        "move_message",
+        "copy_message",
+        "mark_read",
+        "mark_unread",
+        "flag_message",
+        "unflag_message"
       ]
     },
     "email_smtp": {
