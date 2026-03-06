@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.3...v1.1.4) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** log finishReason and parts when generate_image returns no images ([2b05a63](https://github.com/stefanhoth/crusty-proxy/commit/2b05a63cd14b3aa1295204183f39cfc29fc32f36))
+
 ## [1.1.3](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.2...v1.1.3) (2026-03-06)
 
 
