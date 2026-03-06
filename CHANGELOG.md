@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.1...v1.1.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** replace Imagen 3 predict endpoint with gemini-2.5-flash-image generateContent ([b347baf](https://github.com/stefanhoth/crusty-proxy/commit/b347baf56bb186e8a7208356f56fc4d046abbf4c))
+
 ## [1.1.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.0...v1.1.1) (2026-03-06)
 
 
