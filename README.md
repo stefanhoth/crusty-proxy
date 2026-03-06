@@ -74,11 +74,16 @@ docker network create openclaw-internal
 
 ### 4. Create and secure the keys file
 
+Run as root (or your normal admin user). The `crusty` service account only needs **read** access — it should not be able to modify its own credentials.
+
 ```bash
-sudo -u crusty cp /opt/mcp-proxy/config/keys.example.json /opt/mcp-proxy/config/keys.json
-sudo -u crusty chmod 600 /opt/mcp-proxy/config/keys.json
-sudo -u crusty nano /opt/mcp-proxy/config/keys.json
+cp /opt/mcp-proxy/config/keys.example.json /opt/mcp-proxy/config/keys.json
+nano /opt/mcp-proxy/config/keys.json
+chown root:crusty /opt/mcp-proxy/config/keys.json
+chmod 640 /opt/mcp-proxy/config/keys.json
 ```
+
+`root:crusty 640` means root can read/write, the `crusty` group (which the service process is in) can read, and nobody else can see the file. A compromised `crusty` process cannot overwrite or replace its own keys.
 
 ### 5. Start
 
