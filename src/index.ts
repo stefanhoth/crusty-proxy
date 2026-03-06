@@ -306,14 +306,13 @@ function buildTools(al: Allowlist): Tool[] {
             prompt: { type: "string", description: "Image generation prompt" },
             aspect_ratio: {
               type: "string",
-              enum: ["1:1", "9:16", "16:9", "4:3", "3:4"],
+              enum: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"],
               description: "Image aspect ratio (default: 1:1)",
             },
-            number_of_images: {
-              type: "number",
-              description: "Number of images to generate (1-4, default: 1)",
-              minimum: 1,
-              maximum: 4,
+            image_size: {
+              type: "string",
+              enum: ["512px", "1K", "2K", "4K"],
+              description: "Output resolution (default: 1K). Use uppercase K.",
             },
           },
           required: ["prompt"],

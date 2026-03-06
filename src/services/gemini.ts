@@ -13,15 +13,20 @@ export class GeminiService {
 
   async generateImage(args: {
     prompt: string;
-    aspect_ratio?: "1:1" | "9:16" | "16:9" | "4:3" | "3:4";
-    number_of_images?: number;
+    aspect_ratio?: string;
+    image_size?: string;
   }): Promise<{ text: string; images: ImageContent[] }> {
+    const imageConfig: Record<string, string> = {};
+    if (args.aspect_ratio) imageConfig.aspect_ratio = args.aspect_ratio;
+    if (args.image_size) imageConfig.image_size = args.image_size;
+
     const res = await axios.post(
       `${BASE}/models/${IMAGE_MODEL}:generateContent`,
       {
         contents: [{ parts: [{ text: args.prompt }] }],
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
+          ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
         },
       },
       {
