@@ -98,14 +98,14 @@ export class HttpUpstreamClient implements UpstreamClient {
       .filter((t) => this.allowedTools.has(t.name))
       .map((t) => ({ ...t, name: `${this.prefix}${t.name}` }));
 
-    const ts = () => new Date().toISOString();
-    console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" connected — ${this._tools.length} active, ${blocked.length} blocked, ${unknown.length} unknown (not in upstream)`);
-    if (blocked.length > 0) {
-      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" blocked: ${blocked.join(", ")}`);
-    }
-    if (unknown.length > 0) {
-      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" unknown (stale allowlist entries): ${unknown.join(", ")}`);
-    }
+    const ts = new Date().toISOString();
+    console.log(ts, "[crusty-proxy]", `Upstream "${this.config.name}" connected`, {
+      active: this._tools.length,
+      blocked: blocked.length,
+      unknown: unknown.length,
+    });
+    if (blocked.length > 0) console.log(ts, "[crusty-proxy]", `Upstream "${this.config.name}" blocked tools:`, blocked);
+    if (unknown.length > 0) console.log(ts, "[crusty-proxy]", `Upstream "${this.config.name}" unknown tools (stale allowlist entries):`, unknown);
   }
 
   private stripPrefix(name: string): string {
