@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.2...v1.1.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** align generate_image signature to gemini-2.5-flash-image API ([3a27893](https://github.com/stefanhoth/crusty-proxy/commit/3a27893d959a918d28b11353b363a19e2435e23c))
+
 ## [1.1.2](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.1...v1.1.2) (2026-03-06)
 
 
