@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.5.0...v1.5.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **logging:** structured log format for upstream tool counts and lists ([ad91384](https://github.com/stefanhoth/crusty-proxy/commit/ad91384d2ed0fc894aecd5daf2b1ebdb06daf923))
+
 # [1.5.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.1...v1.5.0) (2026-03-06)
 
 
