@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.2.0...v1.3.0) (2026-03-06)
+
+
+### Features
+
+* **calendar:** replace Google Calendar OAuth2 with CalDAV/ICS via tsdav ([6a0e9c1](https://github.com/stefanhoth/crusty-proxy/commit/6a0e9c1c03d5c2ed5fcccd5870a26abaa2713cb9))
+
 # [1.2.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.6...v1.2.0) (2026-03-06)
 
 
