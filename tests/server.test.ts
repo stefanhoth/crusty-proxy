@@ -58,6 +58,7 @@ describe("server integration", () => {
       todoist: false,
       google_places: false,
       gemini: false,
+      gws: false,
     });
     expect(body.tools).toBe(0);
   });

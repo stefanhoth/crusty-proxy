@@ -26,7 +26,13 @@ services:
         source: ./config/allowlist.json
         target: /etc/mcp-proxy/allowlist.json
         read_only: true
-      # Writable tmp for Node.js runtime internals
+      # gws credentials — required when gws is enabled in allowlist.json
+      # Obtain via: gws auth login && gws auth export --unmasked > config/gws-credentials.json
+      - type: bind
+        source: ./config/gws-credentials.json
+        target: /etc/mcp-proxy/gws-credentials.json
+        read_only: true
+      # Writable tmp for Node.js runtime internals and gws discovery cache
       - type: tmpfs
         target: /tmp
 
@@ -43,6 +49,8 @@ services:
       # Paths are defaults; only override if you change the volume targets
       # KEYS_PATH: /etc/mcp-proxy/keys.json
       # ALLOWLIST_PATH: /etc/mcp-proxy/allowlist.json
+      # Required when gws is enabled in allowlist.json:
+      GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE: /etc/mcp-proxy/gws-credentials.json
 
     healthcheck:
       test: ["CMD", "bun", "--eval", "const r=await fetch('http://localhost:3000/health');process.exit(r.ok?0:1)"]

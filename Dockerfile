@@ -21,6 +21,11 @@ COPY src/ ./src/
 # goplaces binary (pre-built Go binary, no Go runtime needed at runtime)
 COPY --from=goplaces-builder /go/bin/goplaces /usr/local/bin/goplaces
 
+# gws (Google Workspace CLI) — npm package bundles pre-built Linux x64 binary
+RUN apk add --no-cache nodejs npm && \
+    npm install -g @googleworkspace/cli && \
+    apk del nodejs npm
+
 # Config dir — actual files are bind-mounted read-only at runtime
 RUN mkdir -p /etc/mcp-proxy && \
     chown -R crusty:crusty /etc/mcp-proxy && \

@@ -11,9 +11,11 @@ import { loadKeys, loadAllowlist, isOperationAllowed } from "./config.js";
 import { CalendarService } from "./services/calendar.js";
 import { EmailService } from "./services/email.js";
 import { createTodoistUpstream } from "./services/todoist.js";
+import { createGwsUpstream } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
 import type { UpstreamClient } from "./upstream/types.js";
+import { GWS_SERVICE_KEYS } from "./types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { Allowlist, Keys, ToolResult } from "./types.js";
 
@@ -69,12 +71,22 @@ async function initUpstreams(): Promise<void> {
     upstreams.set("todoist", client);
     log.info(`Todoist upstream connected — ${client.tools.length} tools available`);
   }
-  // Add future official MCP servers here (same pattern):
-  //   if (keys.someService && allowlist.services.someService?.enabled) {
-  //     const client = createSomeServiceUpstream(...);
-  //     await client.connect();
-  //     upstreams.set("someService", client);
-  //   }
+  // gws — aggregate all enabled gws_* services into one stdio client process
+  const gwsOps: string[] = [];
+  for (const key of GWS_SERVICE_KEYS) {
+    const svc = allowlist.services[key];
+    if (svc?.enabled) gwsOps.push(...svc.allowed_operations);
+  }
+  if (gwsOps.length > 0) {
+    const credFile = process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE;
+    if (!credFile) {
+      log.warn("gws: services enabled in allowlist but GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE is not set — skipping");
+    } else {
+      const client = createGwsUpstream(gwsOps);
+      await client.connect();
+      upstreams.set("gws", client);
+    }
+  }
 }
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -536,6 +548,7 @@ app.get("/health", (_req, res) => {
       todoist: upstreams.has("todoist"),
       google_places: places !== null && (allowlist.services.google_places?.enabled ?? false),
       gemini: gemini !== null && (allowlist.services.gemini?.enabled ?? false),
+      gws: upstreams.has("gws"),
     },
     upstream_services: [...upstreams.keys()],
     tools: buildTools(allowlist).length,

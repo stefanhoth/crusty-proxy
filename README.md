@@ -104,9 +104,30 @@ docker exec crusty-proxy bun --eval \
 
 ## Service credentials
 
-### Google Calendar (OAuth2)
+### Google Workspace — Calendar & Gmail (via gws)
 
-You need a Google Cloud project with the Calendar API enabled and an OAuth2 client.
+Calendar and Gmail are proxied through the [Google Workspace CLI](https://github.com/googleworkspace/cli) (`gws`), which handles OAuth2 and speaks MCP over stdio. Do this once on a machine with a browser, then copy the credentials to the VPS.
+
+```bash
+# On a machine with a browser (e.g. your laptop):
+npm install -g @googleworkspace/cli
+gws auth setup    # one-time: creates Cloud project, enables APIs, logs you in
+                  # (or use gws auth login if you already have a project)
+gws auth export --unmasked > gws-credentials.json
+```
+
+Copy `gws-credentials.json` to the VPS:
+
+```bash
+scp gws-credentials.json user@your-vps:/opt/mcp-proxy/config/gws-credentials.json
+sudo -u crusty chmod 600 /opt/mcp-proxy/config/gws-credentials.json
+```
+
+Then enable gws in `allowlist.json` (set `"enabled": true` in the `gws` block) and restart.
+
+### Google Calendar (OAuth2 — legacy, superseded by gws)
+
+The direct OAuth2 Calendar integration still works if you prefer not to use `gws`. You need a Google Cloud project with the Calendar API enabled and an OAuth2 client.
 
 ```
 OAuth Playground: https://developers.google.com/oauthplayground
@@ -214,9 +235,24 @@ npx mcporter list https://ai.todoist.net/mcp
 
 | Tool | Service | Notes |
 |------|---------|-------|
-| `calendar.list_events` | Google Calendar | |
-| `calendar.get_event` | Google Calendar | |
-| `calendar.create_event` | Google Calendar | |
+| `gws.calendar_calendarList_list` | gws / Google Calendar | |
+| `gws.calendar_events_list` | gws / Google Calendar | |
+| `gws.calendar_events_get` | gws / Google Calendar | |
+| `gws.calendar_events_insert` | gws / Google Calendar | |
+| `gws.calendar_events_patch` | gws / Google Calendar | |
+| `gws.calendar_freebusy_query` | gws / Google Calendar | |
+| `gws.gmail_users_getProfile` | gws / Gmail | |
+| `gws.gmail_users_messages_list` | gws / Gmail | |
+| `gws.gmail_users_messages_get` | gws / Gmail | |
+| `gws.gmail_users_messages_send` | gws / Gmail | |
+| `gws.gmail_users_messages_modify` | gws / Gmail | add/remove labels |
+| `gws.gmail_users_drafts_list` | gws / Gmail | |
+| `gws.gmail_users_drafts_get` | gws / Gmail | |
+| `gws.gmail_users_drafts_create` | gws / Gmail | |
+| `gws.gmail_users_labels_list` | gws / Gmail | |
+| `calendar.list_events` | Google Calendar | legacy, superseded by gws |
+| `calendar.get_event` | Google Calendar | legacy |
+| `calendar.create_event` | Google Calendar | legacy |
 | `email.list_messages` | IMAP | |
 | `email.get_message` | IMAP | |
 | `email.send_message` | SMTP | |

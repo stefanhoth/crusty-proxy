@@ -1,7 +1,7 @@
 {
   "services": {
     "google_calendar": {
-      "enabled": true,
+      "enabled": false,
       "allowed_operations": [
         "list_events",
         "get_event",
@@ -9,7 +9,7 @@
       ]
     },
     "email": {
-      "enabled": true,
+      "enabled": false,
       "allowed_operations": [
         "list_messages",
         "get_message",
@@ -41,6 +41,142 @@
       "allowed_operations": [
         "generate_image",
         "edit_image"
+      ]
+    },
+    "gws_calendar": {
+      "enabled": false,
+      "allowed_operations": [
+        "calendar_calendarList_list",
+        "calendar_calendarList_get",
+        "calendar_calendars_get",
+        "calendar_colors_get",
+        "calendar_events_list",
+        "calendar_events_get",
+        "calendar_events_insert",
+        "calendar_events_patch",
+        "calendar_events_update",
+        "calendar_events_quickAdd",
+        "calendar_events_instances",
+        "calendar_events_move",
+        "calendar_freebusy_query",
+        "calendar_settings_list",
+        "calendar_settings_get"
+      ]
+    },
+    "gws_gmail": {
+      "enabled": false,
+      "allowed_operations": [
+        "gmail_users_getProfile",
+        "gmail_users_messages_list",
+        "gmail_users_messages_get",
+        "gmail_users_messages_send",
+        "gmail_users_messages_insert",
+        "gmail_users_messages_modify",
+        "gmail_users_messages_trash",
+        "gmail_users_messages_untrash",
+        "gmail_users_messages_batchModify",
+        "gmail_users_messages_attachments_get",
+        "gmail_users_drafts_list",
+        "gmail_users_drafts_get",
+        "gmail_users_drafts_create",
+        "gmail_users_drafts_update",
+        "gmail_users_drafts_send",
+        "gmail_users_threads_list",
+        "gmail_users_threads_get",
+        "gmail_users_threads_modify",
+        "gmail_users_threads_trash",
+        "gmail_users_threads_untrash",
+        "gmail_users_labels_list",
+        "gmail_users_labels_get",
+        "gmail_users_labels_create",
+        "gmail_users_labels_update",
+        "gmail_users_labels_patch",
+        "gmail_users_history_list"
+      ]
+    },
+    "gws_drive": {
+      "enabled": false,
+      "allowed_operations": [
+        "drive_about_get",
+        "drive_drives_list",
+        "drive_drives_get",
+        "drive_files_list",
+        "drive_files_get",
+        "drive_files_create",
+        "drive_files_update",
+        "drive_files_copy",
+        "drive_files_export",
+        "drive_files_download",
+        "drive_files_listLabels",
+        "drive_permissions_list",
+        "drive_permissions_get",
+        "drive_permissions_create",
+        "drive_permissions_update",
+        "drive_comments_list",
+        "drive_comments_get",
+        "drive_comments_create",
+        "drive_comments_update",
+        "drive_revisions_list",
+        "drive_revisions_get",
+        "drive_changes_list",
+        "drive_changes_getStartPageToken"
+      ]
+    },
+    "gws_docs": {
+      "enabled": false,
+      "allowed_operations": [
+        "docs_documents_get",
+        "docs_documents_create",
+        "docs_documents_batchUpdate"
+      ]
+    },
+    "gws_sheets": {
+      "enabled": false,
+      "allowed_operations": [
+        "sheets_spreadsheets_get",
+        "sheets_spreadsheets_create",
+        "sheets_spreadsheets_batchUpdate",
+        "sheets_spreadsheets_values_get",
+        "sheets_spreadsheets_values_update",
+        "sheets_spreadsheets_values_append",
+        "sheets_spreadsheets_values_clear",
+        "sheets_spreadsheets_values_batchGet",
+        "sheets_spreadsheets_values_batchUpdate",
+        "sheets_spreadsheets_values_batchClear"
+      ]
+    },
+    "gws_tasks": {
+      "enabled": false,
+      "allowed_operations": [
+        "tasks_tasklists_list",
+        "tasks_tasklists_get",
+        "tasks_tasklists_insert",
+        "tasks_tasklists_patch",
+        "tasks_tasklists_update",
+        "tasks_tasks_list",
+        "tasks_tasks_get",
+        "tasks_tasks_insert",
+        "tasks_tasks_patch",
+        "tasks_tasks_update",
+        "tasks_tasks_move",
+        "tasks_tasks_clear"
+      ]
+    },
+    "gws_chat": {
+      "enabled": false,
+      "allowed_operations": [
+        "chat_spaces_list",
+        "chat_spaces_get",
+        "chat_spaces_findDirectMessage",
+        "chat_spaces_create",
+        "chat_spaces_patch",
+        "chat_spaces_messages_list",
+        "chat_spaces_messages_get",
+        "chat_spaces_messages_create",
+        "chat_spaces_messages_patch",
+        "chat_spaces_members_list",
+        "chat_spaces_members_get",
+        "chat_spaces_members_create"
       ]
     }
   }

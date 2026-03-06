@@ -56,13 +56,29 @@ export const ServiceAllowlistSchema = z.object({
 
 export const AllowlistSchema = z.object({
   services: z.object({
+    // Direct API services (own credentials in keys.json)
     google_calendar: ServiceAllowlistSchema.optional(),
     email: ServiceAllowlistSchema.optional(),
     todoist: ServiceAllowlistSchema.optional(),
     google_places: ServiceAllowlistSchema.optional(),
     gemini: ServiceAllowlistSchema.optional(),
+    // Google Workspace CLI (gws) — per-service enable/disable
+    // Credentials: GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE env var
+    gws_calendar: ServiceAllowlistSchema.optional(),
+    gws_gmail: ServiceAllowlistSchema.optional(),
+    gws_drive: ServiceAllowlistSchema.optional(),
+    gws_docs: ServiceAllowlistSchema.optional(),
+    gws_sheets: ServiceAllowlistSchema.optional(),
+    gws_tasks: ServiceAllowlistSchema.optional(),
+    gws_chat: ServiceAllowlistSchema.optional(),
   }),
 });
+
+/** All gws_* service keys — used to aggregate ops for the stdio client. */
+export const GWS_SERVICE_KEYS = [
+  "gws_calendar", "gws_gmail", "gws_drive", "gws_docs",
+  "gws_sheets", "gws_tasks", "gws_chat",
+] as const satisfies ReadonlyArray<keyof z.infer<typeof AllowlistSchema>["services"]>;
 
 export type Keys = z.infer<typeof KeysSchema>;
 export type Allowlist = z.infer<typeof AllowlistSchema>;
