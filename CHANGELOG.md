@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.0...v1.4.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **todoist:** update allowlist to real upstream tool names (26/27 enabled) ([808c8aa](https://github.com/stefanhoth/crusty-proxy/commit/808c8aaecdfcce0574e663d62594e9db72816064))
+
 # [1.4.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.3.1...v1.4.0) (2026-03-06)
 
 
