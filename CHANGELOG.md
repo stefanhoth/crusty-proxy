@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.1...v1.5.0) (2026-03-06)
+
+
+### Features
+
+* **health:** enrich ?check output and startup log with per-upstream tool counts ([b870577](https://github.com/stefanhoth/crusty-proxy/commit/b870577c3872094f9c04203c433871a81ffdc01e))
+
 ## [1.4.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.0...v1.4.1) (2026-03-06)
 
 
