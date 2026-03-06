@@ -125,7 +125,8 @@ Copy `gws-credentials.json` to the VPS:
 
 ```bash
 scp gws-credentials.json user@your-vps:/opt/mcp-proxy/config/gws-credentials.json
-sudo -u crusty chmod 600 /opt/mcp-proxy/config/gws-credentials.json
+chown root:crusty /opt/mcp-proxy/config/gws-credentials.json
+chmod 640 /opt/mcp-proxy/config/gws-credentials.json
 ```
 
 Then enable gws in `allowlist.json` (set `"enabled": true` in the `gws` block) and restart.
