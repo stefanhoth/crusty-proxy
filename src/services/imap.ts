@@ -1,5 +1,9 @@
 import { ImapFlow } from "imapflow";
+import { simpleParser } from "mailparser";
+import TurndownService from "turndown";
 import type { ImapKeys } from "../types.js";
+
+const turndown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
 
 export class ImapService {
   constructor(private keys: ImapKeys) {}
@@ -75,36 +79,93 @@ export class ImapService {
       const folder = args.folder ?? "INBOX";
       const lock = await client.getMailboxLock(folder);
       try {
-        const msg = await client.fetchOne(
-          String(args.uid),
-          { envelope: true, bodyStructure: true, bodyParts: ["text"] },
-          { uid: true },
-        );
-        if (!msg) throw new Error(`Message UID ${args.uid} not found`);
+        const raw = await client.fetchOne(String(args.uid), { source: true }, { uid: true });
+        if (!raw || !("source" in raw) || !Buffer.isBuffer(raw.source)) {
+          throw new Error(`Message UID ${args.uid} not found`);
+        }
 
-        const textMsg = await client.fetchOne(
-          String(args.uid),
-          { source: true },
-          { uid: true },
-        );
+        const parsed = await simpleParser(raw.source);
 
-        const env = msg.envelope;
-        if (!env) throw new Error(`Message UID ${args.uid} has no envelope`);
+        // Prefer HTML (convert to Markdown for compact, structured output).
+        // Fall back to plain text if no HTML part is present.
+        let body: string;
+        let bodyType: string;
+        if (parsed.html) {
+          body = turndown.turndown(parsed.html);
+          bodyType = "html→markdown";
+        } else if (parsed.text) {
+          body = parsed.text;
+          bodyType = "plain";
+        } else {
+          body = "";
+          bodyType = "none";
+        }
 
-        const source =
-          textMsg && "source" in textMsg && Buffer.isBuffer(textMsg.source)
-            ? textMsg.source.toString("utf-8").slice(0, 51200)
-            : null;
+        const formatAddresses = (field: typeof parsed.from | undefined) =>
+          field?.value.map((a) => `${a.name ? a.name + " " : ""}<${a.address}>`) ?? [];
+
+        const toField = parsed.to
+          ? (Array.isArray(parsed.to) ? parsed.to : [parsed.to]).flatMap((g) =>
+              g.value.map((a) => `${a.name ? a.name + " " : ""}<${a.address}>`),
+            )
+          : [];
 
         return JSON.stringify(
           {
-            uid: msg.uid,
-            subject: env.subject,
-            from: env.from?.map((a) => `${a.name ?? ""} <${a.address}>`.trim()),
-            to: env.to?.map((a) => `${a.name ?? ""} <${a.address}>`.trim()),
-            cc: env.cc?.map((a) => `${a.name ?? ""} <${a.address}>`.trim()),
-            date: env.date,
-            source,
+            uid: args.uid,
+            subject: parsed.subject,
+            from: formatAddresses(parsed.from),
+            to: toField,
+            cc: formatAddresses(parsed.cc as typeof parsed.from | undefined),
+            date: parsed.date,
+            body,
+            body_type: bodyType,
+            attachments: parsed.attachments.map((att, i) => ({
+              index: i,
+              filename: att.filename ?? `attachment_${i}`,
+              content_type: att.contentType,
+              size: att.size,
+            })),
+          },
+          null,
+          2,
+        );
+      } finally {
+        lock.release();
+      }
+    } finally {
+      await client.logout();
+    }
+  }
+
+  async getAttachment(args: { uid: number; attachment_index: number; folder?: string }): Promise<string> {
+    const client = this.createClient();
+    await client.connect();
+    try {
+      const folder = args.folder ?? "INBOX";
+      const lock = await client.getMailboxLock(folder);
+      try {
+        const raw = await client.fetchOne(String(args.uid), { source: true }, { uid: true });
+        if (!raw || !("source" in raw) || !Buffer.isBuffer(raw.source)) {
+          throw new Error(`Message UID ${args.uid} not found`);
+        }
+
+        const parsed = await simpleParser(raw.source);
+        const att = parsed.attachments[args.attachment_index];
+        if (!att) {
+          throw new Error(
+            `Attachment index ${args.attachment_index} not found (message has ${parsed.attachments.length} attachment(s))`,
+          );
+        }
+
+        const isText = att.contentType.startsWith("text/");
+        return JSON.stringify(
+          {
+            filename: att.filename ?? `attachment_${args.attachment_index}`,
+            content_type: att.contentType,
+            size: att.size,
+            encoding: isText ? "utf-8" : "base64",
+            content: isText ? att.content.toString("utf-8") : att.content.toString("base64"),
           },
           null,
           2,

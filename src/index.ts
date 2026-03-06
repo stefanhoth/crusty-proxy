@@ -171,7 +171,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("get_message")) {
       tools.push({
         name: "email_imap.get_message",
-        description: "Get the full content of an email by UID",
+        description: "Get a parsed email by UID: decoded body as Markdown (HTML→MD or plain text fallback) plus attachment metadata",
         inputSchema: {
           type: "object",
           properties: {
@@ -179,6 +179,21 @@ function buildTools(al: Allowlist): Tool[] {
             folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
           },
           required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("get_attachment")) {
+      tools.push({
+        name: "email_imap.get_attachment",
+        description: "Download a specific attachment from an email. Text attachments are returned as UTF-8 strings; binary attachments (PDF, images, etc.) as base64.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            attachment_index: { type: "number", description: "Zero-based index from the attachments list in get_message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid", "attachment_index"],
         },
       });
     }
@@ -409,6 +424,11 @@ async function handleToolCall(
       if (!isOperationAllowed(al, "email_imap", "get_message")) return err("Operation not allowed");
       if (!imap) return err("IMAP not configured");
       return { content: [{ type: "text", text: await imap.getMessage(args as Parameters<typeof imap.getMessage>[0]) }] };
+    }
+    if (name === "email_imap.get_attachment") {
+      if (!isOperationAllowed(al, "email_imap", "get_attachment")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.getAttachment(args as Parameters<typeof imap.getAttachment>[0]) }] };
     }
 
     // SMTP

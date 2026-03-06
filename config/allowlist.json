@@ -12,7 +12,8 @@
       "enabled": false,
       "allowed_operations": [
         "list_messages",
-        "get_message"
+        "get_message",
+        "get_attachment"
       ]
     },
     "email_smtp": {
