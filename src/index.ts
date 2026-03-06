@@ -13,7 +13,7 @@ import { EmailService } from "./services/email.js";
 import { createTodoistUpstream } from "./services/todoist.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
-import { UpstreamMCPClient } from "./upstream.js";
+import type { UpstreamClient } from "./upstream/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { Allowlist, Keys, ToolResult } from "./types.js";
 
@@ -57,7 +57,7 @@ log.info("Services configured:", {
 // Populated async in main() before the HTTP server starts.
 // Key = service name, Value = connected client with cached tool list.
 
-const upstreams = new Map<string, UpstreamMCPClient>();
+const upstreams = new Map<string, UpstreamClient>();
 
 async function initUpstreams(): Promise<void> {
   if (keys.todoist && allowlist.services.todoist?.enabled) {

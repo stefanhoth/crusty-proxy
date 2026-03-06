@@ -1,9 +1,10 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
-import type { TextContent, ImageContent, ToolResult } from "./types.js";
+import type { TextContent, ImageContent, ToolResult } from "../types.js";
+import type { UpstreamClient } from "./types.js";
 
-export interface UpstreamConfig {
+export interface HttpUpstreamConfig {
   url: string;
   bearerToken: string;
   /** Human-readable label for logs and tool name prefix (e.g. "todoist") */
@@ -11,24 +12,17 @@ export interface UpstreamConfig {
 }
 
 /**
- * Connects to an upstream MCP server (HTTP/Streamable), filters its tools by
- * the allowlist, and forwards call results back to OpenClaw.
- *
- * Tools are exposed with a prefix so the namespace is consistent with local
- * tools and collision-safe across multiple upstream services:
- *   upstream tool "get_tasks"  →  OpenClaw sees "todoist_get_tasks"
- *
- * The allowlist uses the upstream's real tool names (no prefix), so it stays
- * valid when Todoist renames or adds tools — you just update allowlist.json.
+ * Upstream MCP client over Streamable HTTP.
+ * Used for hosted MCP servers that authenticate via bearer token (e.g. Todoist).
  */
-export class UpstreamMCPClient {
+export class HttpUpstreamClient implements UpstreamClient {
   private client: Client;
   private allowedTools: Set<string>;
   private _tools: Tool[] = [];
   private prefix: string;
 
   constructor(
-    private config: UpstreamConfig,
+    private config: HttpUpstreamConfig,
     allowedOperations: string[],
   ) {
     this.client = new Client(
@@ -46,36 +40,13 @@ export class UpstreamMCPClient {
       },
     });
     await this.client.connect(transport);
-
-    // Fetch and cache the filtered tool list. The proxy adds a service prefix
-    // so OpenClaw sees todoist_get_tasks, todoist_create_task, etc. — matching
-    // the naming convention of all local tools.
-    const response = await this.client.listTools();
-    this._tools = response.tools
-      .filter((t) => this.allowedTools.has(t.name))
-      .map((t) => ({ ...t, name: `${this.prefix}${t.name}` }));
-
-    const blocked = response.tools
-      .filter((t) => !this.allowedTools.has(t.name))
-      .map((t) => t.name);
-
-    console.log(
-      `[crusty-proxy] Upstream "${this.config.name}" connected — ` +
-        `${this._tools.length}/${response.tools.length} tools active (allowlist)`,
-    );
-    if (blocked.length > 0) {
-      console.log(
-        `[crusty-proxy] Upstream "${this.config.name}" blocked tools: ${blocked.join(", ")}`,
-      );
-    }
+    await this.fetchTools();
   }
 
-  /** Filtered, prefixed tool list — handed to OpenClaw via ListTools. */
   get tools(): Tool[] {
     return this._tools;
   }
 
-  /** Whether this client owns the given (prefixed) tool name. */
   owns(toolName: string): boolean {
     return toolName.startsWith(this.prefix) && this.allowedTools.has(this.stripPrefix(toolName));
   }
@@ -91,8 +62,6 @@ export class UpstreamMCPClient {
     }
 
     const result = await this.client.callTool({ name, arguments: args });
-
-    // Convert SDK content array — filter out EmbeddedResource (not in our ToolContent)
     const content = (result.content as Array<{ type: string } & Record<string, unknown>>)
       .filter((c) => c.type === "text" || c.type === "image")
       .map((c) => c as unknown as TextContent | ImageContent);
@@ -102,6 +71,21 @@ export class UpstreamMCPClient {
 
   async close(): Promise<void> {
     await this.client.close();
+  }
+
+  private async fetchTools(): Promise<void> {
+    const response = await this.client.listTools();
+    const blocked = response.tools.filter((t) => !this.allowedTools.has(t.name)).map((t) => t.name);
+
+    this._tools = response.tools
+      .filter((t) => this.allowedTools.has(t.name))
+      .map((t) => ({ ...t, name: `${this.prefix}${t.name}` }));
+
+    const ts = () => new Date().toISOString();
+    console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" connected — ${this._tools.length}/${response.tools.length} tools active (allowlist)`);
+    if (blocked.length > 0) {
+      console.log(`${ts()} [crusty-proxy] Upstream "${this.config.name}" blocked tools: ${blocked.join(", ")}`);
+    }
   }
 
   private stripPrefix(name: string): string {

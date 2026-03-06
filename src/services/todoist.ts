@@ -1,11 +1,11 @@
-import { UpstreamMCPClient } from "../upstream.js";
+import { HttpUpstreamClient } from "../upstream/http.js";
 import type { TodoistKeysSchema } from "../types.js";
 import type { z } from "zod";
 
 type TodoistKeys = z.infer<typeof TodoistKeysSchema>;
 
 /**
- * Creates an UpstreamMCPClient pointed at the official Todoist hosted MCP.
+ * Creates an HttpUpstreamClient pointed at the official Todoist hosted MCP.
  *
  * Todoist maintains this server — tool schemas, descriptions, and new
  * capabilities stay current automatically. The allowlist in allowlist.json
@@ -19,8 +19,8 @@ type TodoistKeys = z.infer<typeof TodoistKeysSchema>;
 export function createTodoistUpstream(
   keys: TodoistKeys,
   allowedOperations: string[],
-): UpstreamMCPClient {
-  return new UpstreamMCPClient(
+): HttpUpstreamClient {
+  return new HttpUpstreamClient(
     {
       url: keys.mcp_url,
       bearerToken: keys.bearer_token,
