@@ -48,7 +48,7 @@ const email    = keys.email           ? new EmailService(keys.email)            
 const places   = keys.google_places   ? new PlacesService(keys.google_places)      : null;
 const gemini   = keys.gemini          ? new GeminiService(keys.gemini)             : null;
 
-log.info("Services configured:", {
+log.info("Credentials loaded:", {
   calendar:      calendar !== null,
   email:         email    !== null,
   google_places: places   !== null,
@@ -561,6 +561,15 @@ async function main(): Promise<void> {
   // Connect upstream MCP servers before accepting traffic — tool list must
   // be populated before OpenClaw connects and calls ListTools.
   await initUpstreams();
+
+  log.info("Services active:", {
+    calendar:      calendar !== null && (allowlist.services.calendar?.enabled ?? false),
+    email:         email    !== null && (allowlist.services.email?.enabled ?? false),
+    google_places: places   !== null && (allowlist.services.google_places?.enabled ?? false),
+    gemini:        gemini   !== null && (allowlist.services.gemini?.enabled ?? false),
+    todoist:       upstreams.has("todoist"),
+    gws:           upstreams.has("gws"),
+  });
 
   const PORT = parseInt(process.env.PORT ?? "3000", 10);
   app.listen(PORT, "0.0.0.0", () => {
