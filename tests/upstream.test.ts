@@ -75,3 +75,86 @@ describe("StdioUpstreamClient.callTool() — allowlist enforcement", () => {
     expect((result.content[0] as { type: "text"; text: string }).text).toContain("allowlist");
   });
 });
+
+// ── ping() — tool categorization ─────────────────────────────────────────────
+//
+// ping() calls listTools() on the live MCP client. We patch the private
+// client instance via (client as any) to avoid spawning real processes.
+
+function mockListTools(client: object, tools: string[]): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (client as any).client = {
+    listTools: async () => ({
+      tools: tools.map((name) => ({ name, description: "", inputSchema: { type: "object" } })),
+    }),
+  };
+}
+
+describe("HttpUpstreamClient.ping() — tool categorization", () => {
+  // Allowlist: a, b, c  |  Upstream: a, b, d
+  // active: a, b  |  blocked: d  |  unknown: c
+  it("correctly categorises active, blocked, and unknown tools", async () => {
+    const client = makeHttpClient(["a", "b", "c"]);
+    mockListTools(client, ["a", "b", "d"]);
+
+    const result = await client.ping();
+
+    expect(result.reachable).toBe(true);
+    expect(result.tools_active).toEqual(["a", "b"]);
+    expect(result.tools_blocked).toEqual(["d"]);
+    expect(result.tools_unknown).toEqual(["c"]);
+  });
+
+  it("returns all active when allowlist matches upstream exactly", async () => {
+    const client = makeHttpClient(["x", "y"]);
+    mockListTools(client, ["x", "y"]);
+
+    const result = await client.ping();
+
+    expect(result.reachable).toBe(true);
+    expect(result.tools_active).toEqual(["x", "y"]);
+    expect(result.tools_blocked).toEqual([]);
+    expect(result.tools_unknown).toEqual([]);
+  });
+
+  it("returns all unknown when no allowlist tool exists in upstream", async () => {
+    const client = makeHttpClient(["old-tool"]);
+    mockListTools(client, ["new-tool"]);
+
+    const result = await client.ping();
+
+    expect(result.reachable).toBe(true);
+    expect(result.tools_active).toEqual([]);
+    expect(result.tools_blocked).toEqual(["new-tool"]);
+    expect(result.tools_unknown).toEqual(["old-tool"]);
+  });
+
+  it("returns reachable:false and empty lists when listTools throws", async () => {
+    const client = makeHttpClient(["a"]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (client as any).client = {
+      listTools: async () => { throw new Error("connection refused"); },
+    };
+
+    const result = await client.ping();
+
+    expect(result.reachable).toBe(false);
+    expect(result.tools_active).toEqual([]);
+    expect(result.tools_blocked).toEqual([]);
+    expect(result.tools_unknown).toEqual([]);
+  });
+});
+
+describe("StdioUpstreamClient.ping() — tool categorization", () => {
+  it("correctly categorises active, blocked, and unknown tools", async () => {
+    const client = makeStdioClient(["calendar_events_list", "calendar_events_insert"]);
+    mockListTools(client, ["calendar_events_list", "calendar_events_get"]);
+
+    const result = await client.ping();
+
+    expect(result.reachable).toBe(true);
+    expect(result.tools_active).toEqual(["calendar_events_list"]);
+    expect(result.tools_blocked).toEqual(["calendar_events_get"]);
+    expect(result.tools_unknown).toEqual(["calendar_events_insert"]);
+  });
+});

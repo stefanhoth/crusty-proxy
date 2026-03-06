@@ -78,12 +78,12 @@ export class StdioUpstreamClient implements UpstreamClient {
       const upstreamNames = new Set(response.tools.map((t) => t.name));
       return {
         reachable: true,
-        tools_active:  response.tools.filter((t) =>  this.allowedTools.has(t.name)).length,
-        tools_blocked: response.tools.filter((t) => !this.allowedTools.has(t.name)).length,
-        tools_unknown: [...this.allowedTools].filter((n) => !upstreamNames.has(n)).length,
+        tools_active:  response.tools.filter((t) =>  this.allowedTools.has(t.name)).map((t) => t.name),
+        tools_blocked: response.tools.filter((t) => !this.allowedTools.has(t.name)).map((t) => t.name),
+        tools_unknown: [...this.allowedTools].filter((n) => !upstreamNames.has(n)),
       };
     } catch {
-      return { reachable: false, tools_active: 0, tools_blocked: 0, tools_unknown: 0 };
+      return { reachable: false, tools_active: [], tools_blocked: [], tools_unknown: [] };
     }
   }
 

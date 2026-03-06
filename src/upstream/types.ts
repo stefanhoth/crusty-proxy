@@ -4,11 +4,11 @@ import type { ToolResult } from "../types.js";
 export interface UpstreamPingResult {
   reachable: boolean;
   /** Tools present in upstream AND in allowlist. */
-  tools_active: number;
+  tools_active: string[];
   /** Tools present in upstream but NOT in allowlist. */
-  tools_blocked: number;
+  tools_blocked: string[];
   /** Tools in allowlist but NOT present in upstream (stale or wrong names). */
-  tools_unknown: number;
+  tools_unknown: string[];
 }
 
 /**
