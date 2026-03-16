@@ -12,7 +12,7 @@ import { CalendarService } from "./services/calendar.js";
 import { ImapService } from "./services/imap.js";
 import { SmtpService } from "./services/smtp.js";
 import { createTodoistUpstream } from "./services/todoist.js";
-import { createGwsUpstream } from "./services/gws.js";
+import { GwsServiceBridge } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
 import type { UpstreamClient } from "./upstream/types.js";
@@ -74,21 +74,26 @@ async function initUpstreams(): Promise<void> {
     upstreams.set("todoist", client);
     log.info(`Todoist upstream connected — ${client.tools.length} tools available`);
   }
-  // gws — aggregate all enabled gws_* services into one stdio client process
-  const gwsOps: string[] = [];
+}
+
+// ── Google Workspace CLI bridges (one per enabled gws_* service) ─────────────
+// Synchronous — no async connect needed; each tool call spawns a short-lived
+// gws subprocess. Requires GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE to be set.
+
+const gwsBridges = new Map<string, GwsServiceBridge>();
+
+{
+  const credFile = process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE;
   for (const key of GWS_SERVICE_KEYS) {
-    const svc = allowlist.services[key];
-    if (svc?.enabled) gwsOps.push(...svc.allowed_operations);
-  }
-  if (gwsOps.length > 0) {
-    const credFile = process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE;
+    if (!allowlist.services[key]?.enabled) continue;
     if (!credFile) {
-      log.warn("gws: services enabled in allowlist but GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE is not set — skipping");
-    } else {
-      const client = createGwsUpstream(gwsOps);
-      await client.connect();
-      upstreams.set("gws", client);
+      log.warn(`${key} enabled in allowlist but GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE is not set — skipping`);
+      break; // one warning is enough
     }
+    gwsBridges.set(key, new GwsServiceBridge(key));
+  }
+  if (gwsBridges.size > 0) {
+    log.info("gws bridges active:", [...gwsBridges.keys()]);
   }
 }
 
@@ -467,10 +472,42 @@ function buildTools(al: Allowlist): Tool[] {
     }
   }
 
-  // Upstream MCP tools — schemas come directly from the upstream server,
+  // Upstream MCP tools (e.g. Todoist) — schemas come from the upstream server,
   // already filtered to the allowlist. No maintenance required here.
   for (const client of upstreams.values()) {
     tools.push(...client.tools);
+  }
+
+  // gws per-service tools — one tool per allowed operation.
+  // Schema is generic: params (path/query flags) + body (request body).
+  // The LLM is expected to know the Google API field names from training data.
+  for (const [key, bridge] of gwsBridges) {
+    const svc = al.services[key as keyof typeof al.services];
+    if (!svc?.enabled) continue;
+    for (const op of svc.allowed_operations) {
+      const segments = op.split("_");
+      const apiMethod = `${bridge.gwsServiceName}.${segments.join(".")}`;
+      tools.push({
+        name: `${key}.${op}`,
+        description:
+          `Google Workspace API — ${apiMethod}. ` +
+          `Pass path/query parameters in 'params' (Google API camelCase, e.g. calendarId, maxResults, userId). ` +
+          `Pass request body for write operations in 'body' (Google API field names).`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            params: {
+              type: "object",
+              description: "Path and query parameters in Google API camelCase (e.g. {\"calendarId\": \"primary\", \"maxResults\": 10}).",
+            },
+            body: {
+              type: "object",
+              description: "Request body for write operations (insert/update/patch/create). Uses Google API field names.",
+            },
+          },
+        },
+      });
+    }
   }
 
   return tools;
@@ -617,6 +654,16 @@ async function handleToolCall(
       };
     }
 
+    // gws per-service tools: "gws_calendar.events_list", "gws_gmail.users_messages_list", …
+    for (const key of GWS_SERVICE_KEYS) {
+      if (!name.startsWith(`${key}.`)) continue;
+      const op = name.slice(key.length + 1);
+      if (!isOperationAllowed(al, key, op)) return err("Operation not allowed");
+      const bridge = gwsBridges.get(key);
+      if (!bridge) return err(`gws service ${key} not active (credentials missing or service disabled)`);
+      return bridge.call(op, args);
+    }
+
     // Upstream MCP tools (e.g. Todoist official MCP) — route by tool ownership
     for (const [, client] of upstreams) {
       if (client.owns(name)) {
@@ -706,6 +753,12 @@ app.get("/health", async (req, res) => {
       )
     : undefined;
 
+  const gwsServiceStatus = Object.fromEntries(
+    GWS_SERVICE_KEYS
+      .filter((k) => allowlist.services[k]?.enabled)
+      .map((k) => [k, gwsBridges.has(k)] as const),
+  );
+
   res.json({
     status: "ok",
     version,
@@ -716,7 +769,7 @@ app.get("/health", async (req, res) => {
       todoist: upstreams.has("todoist"),
       google_places: places !== null && (allowlist.services.google_places?.enabled ?? false),
       gemini: gemini !== null && (allowlist.services.gemini?.enabled ?? false),
-      gws: upstreams.has("gws"),
+      ...gwsServiceStatus,
     },
     upstream_services: [...upstreams.keys()],
     ...(checks !== undefined && { checks }),
@@ -738,7 +791,7 @@ async function main(): Promise<void> {
     google_places: places   !== null && (allowlist.services.google_places?.enabled ?? false),
     gemini:        gemini   !== null && (allowlist.services.gemini?.enabled ?? false),
     todoist:       upstreams.has("todoist"),
-    gws:           upstreams.has("gws"),
+    gws_bridges:   [...gwsBridges.keys()],
   });
 
   const PORT = parseInt(process.env.PORT ?? "3000", 10);
