@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.1...v2.0.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency nodemailer to v8 ([#13](https://github.com/stefanhoth/crusty-proxy/issues/13)) ([8a19db9](https://github.com/stefanhoth/crusty-proxy/commit/8a19db95acc1fece9c19907da743ce00c8287bb0))
+
 ## [2.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.0...v2.0.1) (2026-03-16)
 
 
