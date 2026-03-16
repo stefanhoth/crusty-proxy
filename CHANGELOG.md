@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.2...v2.1.0) (2026-03-16)
+
+
+### Features
+
+* **gws:** expose gws calendar +agenda as typed MCP tool ([7d51edb](https://github.com/stefanhoth/crusty-proxy/commit/7d51edbd34633553b83f3ab4ce108b173c44463f))
+
 ## [2.0.2](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.1...v2.0.2) (2026-03-16)
 
 
