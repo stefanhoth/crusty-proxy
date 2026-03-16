@@ -1,40 +1,98 @@
-import { StdioUpstreamClient } from "../upstream/stdio.js";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import type { ToolResult } from "../types.js";
+
+const execFileAsync = promisify(execFile);
 
 /**
- * Creates a StdioUpstreamClient for the Google Workspace CLI (gws mcp).
- *
- * gws reads credentials from GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE (an env
- * var pointing to the exported credentials JSON). The discovery cache goes
- * to /tmp/gws so it survives within a session but doesn't need a writable
- * rootfs beyond the tmpfs mount.
- *
- * Which gws services to start is derived from the allowlist tool name prefixes:
- *   "calendar_events_list"  → needs service "calendar"
- *   "gmail_users_messages_list" → needs service "gmail"
- *
- * Getting credentials (one-time setup):
- *   gws auth login            # on a machine with a browser
- *   gws auth export --unmasked > gws-credentials.json
- * Then copy gws-credentials.json to /opt/mcp-proxy/config/ on the VPS.
+ * Convert a camelCase parameter key to a --kebab-case CLI flag.
+ * e.g. "calendarId" → "--calendar-id", "maxResults" → "--max-results"
  */
-export function createGwsUpstream(allowedOperations: string[]): StdioUpstreamClient {
-  // Derive service names from tool name prefixes (first segment before "_")
-  const services = [...new Set(allowedOperations.map((op) => op.split("_")[0]).filter(Boolean))];
+function toKebabFlag(key: string): string {
+  return "--" + key.replace(/([A-Z])/g, (_, c: string) => "-" + c.toLowerCase());
+}
 
-  return new StdioUpstreamClient(
-    {
-      name: "gws",
-      command: "gws",
-      args: ["mcp", "-s", services.join(",")],
-      env: {
-        // Credentials file — bind-mounted read-only into the container
-        ...(process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE && {
-          GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE: process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE,
-        }),
-        // Use tmpfs for discovery document cache (container has read-only rootfs)
-        GOOGLE_WORKSPACE_CLI_CONFIG_DIR: "/tmp/gws",
-      },
-    },
-    allowedOperations,
-  );
+/**
+ * Bridges a single Google Workspace CLI (gws) service via direct subprocess calls.
+ *
+ * Replaces the former stdio MCP approach (gws mcp -s ...) which was removed in
+ * gws 0.8.0 (see https://github.com/googleworkspace/cli/pull/275). Each tool call
+ * now spawns a short-lived gws process, matching the goplaces pattern.
+ *
+ * Operation → CLI mapping (operation names match allowlist entries, service prefix stripped):
+ *   serviceKey="gws_calendar", op="events_list"           → gws calendar events list
+ *   serviceKey="gws_gmail",    op="users_messages_list"   → gws gmail users messages list
+ *   serviceKey="gws_drive",    op="files_create"          → gws drive files create
+ *
+ * Tool input schema:
+ *   params  — path and query parameters (Google API camelCase), passed as --kebab-case flags
+ *   body    — request body for write operations (insert/update/patch/create), passed as --json
+ *
+ * Credentials are read by gws from GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE (env var,
+ * bind-mounted read-only into the container). Discovery docs are cached in /tmp/gws.
+ */
+export class GwsServiceBridge {
+  private readonly gwsService: string;
+  private readonly env: NodeJS.ProcessEnv;
+
+  constructor(serviceKey: string) {
+    // "gws_calendar" → "calendar", "gws_gmail" → "gmail"
+    this.gwsService = serviceKey.replace(/^gws_/, "");
+    this.env = {
+      ...process.env,
+      GOOGLE_WORKSPACE_CLI_CONFIG_DIR: process.env.GOOGLE_WORKSPACE_CLI_CONFIG_DIR ?? "/tmp/gws",
+    };
+  }
+
+  /** The bare gws service name, e.g. "calendar", "gmail", "drive" */
+  get gwsServiceName(): string {
+    return this.gwsService;
+  }
+
+  async call(operation: string, args: Record<string, unknown>): Promise<ToolResult> {
+    // "events_list" → ["events", "list"], "users_messages_list" → ["users", "messages", "list"]
+    const segments = operation.split("_");
+    const cmdArgs: string[] = [this.gwsService, ...segments, "--format", "json"];
+
+    // Path/query params → --kebab-case flags
+    const params = args.params as Record<string, unknown> | undefined;
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value === null || value === undefined) continue;
+        if (typeof value === "boolean") {
+          if (value) cmdArgs.push(toKebabFlag(key));
+        } else if (Array.isArray(value)) {
+          // Repeated params (e.g. labelIds) — one flag per value
+          for (const item of value) cmdArgs.push(toKebabFlag(key), String(item));
+        } else {
+          cmdArgs.push(toKebabFlag(key), String(value));
+        }
+      }
+    }
+
+    // Request body → --json
+    const body = args.body as Record<string, unknown> | undefined;
+    if (body && Object.keys(body).length > 0) {
+      cmdArgs.push("--json", JSON.stringify(body));
+    }
+
+    try {
+      const { stdout, stderr } = await execFileAsync("gws", cmdArgs, {
+        timeout: 30_000,
+        maxBuffer: 5 * 1024 * 1024,
+        env: this.env,
+      });
+      if (stderr) console.warn(`[gws_${this.gwsService}] stderr:`, stderr.trim());
+      return { content: [{ type: "text", text: stdout.trim() }] };
+    } catch (e: unknown) {
+      // execFile rejects with an error object carrying stderr/stdout/code
+      const err = e as { stderr?: string; stdout?: string; code?: number; message?: string };
+      // gws ≥0.12.0 structured exit codes: 1=API, 2=Auth, 3=Validation, 4=Discovery, 5=Internal
+      const detail = err.stderr?.trim() || err.stdout?.trim() || err.message || "unknown error";
+      return {
+        content: [{ type: "text", text: `gws error (exit ${err.code ?? "?"}): ${detail}` }],
+        isError: true,
+      };
+    }
+  }
 }
