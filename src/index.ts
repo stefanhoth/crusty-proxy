@@ -479,12 +479,31 @@ function buildTools(al: Allowlist): Tool[] {
   }
 
   // gws per-service tools — one tool per allowed operation.
-  // Schema is generic: params (path/query flags) + body (request body).
-  // The LLM is expected to know the Google API field names from training data.
+  // Helper commands (op starts with "+") get typed schemas; raw API operations
+  // use a generic params/body schema (LLM uses Google API knowledge for fields).
   for (const [key, bridge] of gwsBridges) {
     const svc = al.services[key as keyof typeof al.services];
     if (!svc?.enabled) continue;
     for (const op of svc.allowed_operations) {
+      if (op === "+agenda" && bridge.gwsServiceName === "calendar") {
+        tools.push({
+          name: `${key}.${op}`,
+          description: "Show upcoming events across all calendars using the gws calendar +agenda helper. Returns a structured agenda view.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              today:    { type: "boolean", description: "Show only today's events" },
+              tomorrow: { type: "boolean", description: "Show only tomorrow's events" },
+              week:     { type: "boolean", description: "Show the current week's events" },
+              days:     { type: "number",  description: "Number of days ahead to show" },
+              calendar: { type: "string",  description: "Restrict to a specific calendar name or ID" },
+              timezone: { type: "string",  description: "Override timezone (IANA format, e.g. Europe/Vienna). Defaults to Google account timezone." },
+            },
+          },
+        });
+        continue;
+      }
+
       const segments = op.split("_");
       const apiMethod = `${bridge.gwsServiceName}.${segments.join(".")}`;
       tools.push({
@@ -661,7 +680,10 @@ async function handleToolCall(
       if (!isOperationAllowed(al, key, op)) return err("Operation not allowed");
       const bridge = gwsBridges.get(key);
       if (!bridge) return err(`gws service ${key} not active (credentials missing or service disabled)`);
-      return bridge.call(op, args);
+      // Helper ops (+ prefix) expose flat args directly; wrap them as params
+      // so the bridge flag-builder picks them up correctly.
+      const bridgeArgs = op.startsWith("+") ? { params: args } : args;
+      return bridge.call(op, bridgeArgs);
     }
 
     // Upstream MCP tools (e.g. Todoist official MCP) — route by tool ownership

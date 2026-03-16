@@ -80,6 +80,7 @@
     "gws_calendar": {
       "enabled": false,
       "allowed_operations": [
+        "+agenda",
         "calendarList_list",
         "calendarList_get",
         "calendars_get",
