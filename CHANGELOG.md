@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/stefanhoth/crusty-proxy/compare/v2.1.0...v2.2.0) (2026-03-16)
+
+
+### Features
+
+* **gws:** log auth status at startup, expose in /health?check ([875b161](https://github.com/stefanhoth/crusty-proxy/commit/875b161b524f9d2c63a2a760e23eddffeb32280b))
+
 # [2.1.0](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.2...v2.1.0) (2026-03-16)
 
 
