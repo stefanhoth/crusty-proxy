@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.0...v2.0.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency zod to v4 ([#14](https://github.com/stefanhoth/crusty-proxy/issues/14)) ([e1cd407](https://github.com/stefanhoth/crusty-proxy/commit/e1cd407d7c542559c299205abcc7301ce302274e))
+
 # [2.0.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.1...v2.0.0) (2026-03-16)
 
 
