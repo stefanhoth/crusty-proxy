@@ -2,6 +2,18 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import type { ToolResult } from "../types.js";
 
+export interface GwsAuthStatus {
+  token_valid: boolean;
+  user?: string;
+  auth_method?: string;
+  storage?: string;
+  scope_count?: number;
+  scopes?: string[];
+  plain_credentials_exists?: boolean;
+  has_refresh_token?: boolean;
+  credential_source?: string;
+}
+
 const execFileAsync = promisify(execFile);
 
 /**
@@ -47,6 +59,24 @@ export class GwsServiceBridge {
   /** The bare gws service name, e.g. "calendar", "gmail", "drive" */
   get gwsServiceName(): string {
     return this.gwsService;
+  }
+
+  /**
+   * Run `gws auth status` and return the parsed result.
+   * Since all bridges share the same credentials file, any bridge instance
+   * can run this — call it once on the first active bridge.
+   * Returns null if gws is not installed or the command fails.
+   */
+  async authStatus(): Promise<GwsAuthStatus | null> {
+    try {
+      const { stdout } = await execFileAsync("gws", ["auth", "status"], {
+        timeout: 10_000,
+        env: this.env,
+      });
+      return JSON.parse(stdout.trim()) as GwsAuthStatus;
+    } catch {
+      return null;
+    }
   }
 
   async call(operation: string, args: Record<string, unknown>): Promise<ToolResult> {

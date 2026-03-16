@@ -12,7 +12,7 @@ import { CalendarService } from "./services/calendar.js";
 import { ImapService } from "./services/imap.js";
 import { SmtpService } from "./services/smtp.js";
 import { createTodoistUpstream } from "./services/todoist.js";
-import { GwsServiceBridge } from "./services/gws.js";
+import { GwsServiceBridge, type GwsAuthStatus } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
 import type { UpstreamClient } from "./upstream/types.js";
@@ -96,6 +96,9 @@ const gwsBridges = new Map<string, GwsServiceBridge>();
     log.info("gws bridges active:", [...gwsBridges.keys()]);
   }
 }
+
+// Cached result of `gws auth status` — populated once in main(), reused in /health?check.
+let gwsAuthStatus: GwsAuthStatus | null = null;
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
 
@@ -795,6 +798,7 @@ app.get("/health", async (req, res) => {
     },
     upstream_services: [...upstreams.keys()],
     ...(checks !== undefined && { checks }),
+    ...(deep && gwsAuthStatus !== null && { gws_auth: gwsAuthStatus }),
     tools: buildTools(allowlist).length,
   });
 });
@@ -805,6 +809,27 @@ async function main(): Promise<void> {
   // Connect upstream MCP servers before accepting traffic — tool list must
   // be populated before OpenClaw connects and calls ListTools.
   await initUpstreams();
+
+  // Run gws auth status once — any bridge will do since credentials are shared.
+  const firstBridge = gwsBridges.values().next().value as GwsServiceBridge | undefined;
+  if (firstBridge) {
+    gwsAuthStatus = await firstBridge.authStatus();
+    if (gwsAuthStatus) {
+      log.info("gws auth status:", {
+        token_valid: gwsAuthStatus.token_valid,
+        user:        gwsAuthStatus.user,
+        auth_method: gwsAuthStatus.auth_method,
+        storage:     gwsAuthStatus.storage,
+        scope_count: gwsAuthStatus.scope_count,
+        scopes:      gwsAuthStatus.scopes,
+      });
+      if (!gwsAuthStatus.token_valid) {
+        log.warn("gws: token is NOT valid — tool calls will fail until credentials are refreshed");
+      }
+    } else {
+      log.warn("gws: auth status check failed (gws binary missing or credentials unreadable)");
+    }
+  }
 
   log.info("Services active:", {
     calendar:      calendar !== null && (allowlist.services.calendar?.enabled ?? false),
