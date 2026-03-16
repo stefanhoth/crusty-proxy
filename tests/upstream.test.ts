@@ -1,20 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import { HttpUpstreamClient } from "../src/upstream/http.js";
-import { StdioUpstreamClient } from "../src/upstream/stdio.js";
+import { GwsServiceBridge } from "../src/services/gws.js";
 
-// owns() and callTool() allowlist enforcement can be tested without connecting
-// to a real upstream — the constructor is pure and callTool() short-circuits
-// before touching the network/process for blocked tools.
+// HttpUpstreamClient: owns() and callTool() allowlist enforcement can be tested
+// without connecting to a real upstream — the constructor is pure and callTool()
+// short-circuits before touching the network for blocked tools.
 
 const makeHttpClient = (allowedOps: string[]) =>
   new HttpUpstreamClient(
     { url: "http://localhost:9999/mcp", bearerToken: "test", name: "todoist" },
-    allowedOps,
-  );
-
-const makeStdioClient = (allowedOps: string[]) =>
-  new StdioUpstreamClient(
-    { command: "gws", args: ["mcp", "-s", "calendar"], name: "gws" },
     allowedOps,
   );
 
@@ -47,31 +41,6 @@ describe("HttpUpstreamClient.callTool() — allowlist enforcement", () => {
     const result = await client.callTool("todoist.delete_task", {});
     expect(result.isError).toBe(true);
     expect(result.content[0].type).toBe("text");
-    expect((result.content[0] as { type: "text"; text: string }).text).toContain("allowlist");
-  });
-});
-
-describe("StdioUpstreamClient.owns()", () => {
-  const client = makeStdioClient(["calendar_list_events", "calendar_create_event"]);
-
-  it("owns a prefixed tool that is in the allowlist", () => {
-    expect(client.owns("gws.calendar_list_events")).toBe(true);
-  });
-
-  it("does not own a prefixed tool not in the allowlist", () => {
-    expect(client.owns("gws.calendar_delete_event")).toBe(false);
-  });
-
-  it("does not own a tool from a different service", () => {
-    expect(client.owns("todoist.get_tasks")).toBe(false);
-  });
-});
-
-describe("StdioUpstreamClient.callTool() — allowlist enforcement", () => {
-  it("returns an error result for a blocked tool without spawning a process", async () => {
-    const client = makeStdioClient(["calendar_list_events"]);
-    const result = await client.callTool("gws.calendar_delete_event", {});
-    expect(result.isError).toBe(true);
     expect((result.content[0] as { type: "text"; text: string }).text).toContain("allowlist");
   });
 });
@@ -145,16 +114,28 @@ describe("HttpUpstreamClient.ping() — tool categorization", () => {
   });
 });
 
-describe("StdioUpstreamClient.ping() — tool categorization", () => {
-  it("correctly categorises active, blocked, and unknown tools", async () => {
-    const client = makeStdioClient(["calendar_events_list", "calendar_events_insert"]);
-    mockListTools(client, ["calendar_events_list", "calendar_events_get"]);
+// ── GwsServiceBridge ──────────────────────────────────────────────────────────
 
-    const result = await client.ping();
+describe("GwsServiceBridge — service name derivation", () => {
+  it("strips gws_ prefix to produce the bare gws service name", () => {
+    expect(new GwsServiceBridge("gws_calendar").gwsServiceName).toBe("calendar");
+    expect(new GwsServiceBridge("gws_gmail").gwsServiceName).toBe("gmail");
+    expect(new GwsServiceBridge("gws_drive").gwsServiceName).toBe("drive");
+    expect(new GwsServiceBridge("gws_sheets").gwsServiceName).toBe("sheets");
+    expect(new GwsServiceBridge("gws_tasks").gwsServiceName).toBe("tasks");
+    expect(new GwsServiceBridge("gws_chat").gwsServiceName).toBe("chat");
+    expect(new GwsServiceBridge("gws_docs").gwsServiceName).toBe("docs");
+  });
+});
 
-    expect(result.reachable).toBe(true);
-    expect(result.tools_active).toEqual(["calendar_events_list"]);
-    expect(result.tools_blocked).toEqual(["calendar_events_get"]);
-    expect(result.tools_unknown).toEqual(["calendar_events_insert"]);
+describe("GwsServiceBridge.call() — error surface", () => {
+  it("returns an isError ToolResult (not a thrown exception) when gws binary is absent", async () => {
+    // In CI / dev environments the gws binary is not installed.
+    // The bridge must surface process-spawn failures as isError results.
+    const bridge = new GwsServiceBridge("gws_calendar");
+    const result = await bridge.call("events_list", { params: { calendarId: "primary" } });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].type).toBe("text");
+    expect(typeof (result.content[0] as { type: "text"; text: string }).text).toBe("string");
   });
 });

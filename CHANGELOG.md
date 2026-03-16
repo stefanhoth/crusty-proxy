@@ -1,3 +1,27 @@
+## [2.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.0...v2.0.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency zod to v4 ([#14](https://github.com/stefanhoth/crusty-proxy/issues/14)) ([e1cd407](https://github.com/stefanhoth/crusty-proxy/commit/e1cd407d7c542559c299205abcc7301ce302274e))
+
+# [2.0.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.1...v2.0.0) (2026-03-16)
+
+
+* feat(gws)!: per-service CLI bridge replaces gws mcp, allowlist breaking change ([3d12189](https://github.com/stefanhoth/crusty-proxy/commit/3d12189ee40b347e11aff714280182a6cdb0c5a7))
+
+
+### BREAKING CHANGES
+
+* gws_* allowlist operation names must drop the leading
+service-name prefix (e.g. calendar_events_list → events_list under
+gws_calendar). See config/allowlist.json for the complete reference.
+
+Also configures commit-analyzer to reliably detect ! and BREAKING CHANGE
+across all preset versions.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
 ## [1.9.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.0...v1.9.1) (2026-03-06)
 
 

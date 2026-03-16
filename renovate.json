@@ -8,11 +8,6 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": ["@googleworkspace/cli"],
-      "allowedVersions": "0.7.0",
-      "description": "Pinned: v0.8.0+ removes stdio MCP transport (see googleworkspace/cli#275)"
-    },
-    {
       "matchManagers": [
         "npm"
       ],
@@ -47,6 +42,17 @@
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "steipete/goplaces",
       "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Dockerfile/"
+      ],
+      "matchStrings": [
+        "npm install -g @googleworkspace/cli@(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "@googleworkspace/cli",
+      "datasourceTemplate": "npm"
     }
   ]
 }
