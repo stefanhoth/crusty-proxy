@@ -1,3 +1,153 @@
+## [2.0.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.0.0...v2.0.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency zod to v4 ([#14](https://github.com/stefanhoth/crusty-proxy/issues/14)) ([e1cd407](https://github.com/stefanhoth/crusty-proxy/commit/e1cd407d7c542559c299205abcc7301ce302274e))
+
+# [2.0.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.1...v2.0.0) (2026-03-16)
+
+
+* feat(gws)!: per-service CLI bridge replaces gws mcp, allowlist breaking change ([3d12189](https://github.com/stefanhoth/crusty-proxy/commit/3d12189ee40b347e11aff714280182a6cdb0c5a7))
+
+
+### BREAKING CHANGES
+
+* gws_* allowlist operation names must drop the leading
+service-name prefix (e.g. calendar_events_list → events_list under
+gws_calendar). See config/allowlist.json for the complete reference.
+
+Also configures commit-analyzer to reliably detect ! and BREAKING CHANGE
+across all preset versions.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+## [1.9.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.9.0...v1.9.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gws:** pin @googleworkspace/cli to 0.7.0, block Renovate upgrades ([560eea3](https://github.com/stefanhoth/crusty-proxy/commit/560eea3c4e7ff82f19ddba37624674f59cc618b8)), closes [googleworkspace/cli#275](https://github.com/googleworkspace/cli/issues/275)
+
+# [1.9.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.8.0...v1.9.0) (2026-03-06)
+
+
+### Features
+
+* **imap:** add folder and message management operations ([9ec7c1c](https://github.com/stefanhoth/crusty-proxy/commit/9ec7c1c2fbc9cec70837a3f76aeaa6f91cadaf66))
+
+# [1.8.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.7.0...v1.8.0) (2026-03-06)
+
+
+### Features
+
+* **imap:** proper MIME parsing with HTML→Markdown body and attachment support ([a6f1ecb](https://github.com/stefanhoth/crusty-proxy/commit/a6f1ecbc39757b426857f040c55641590e4af43f))
+
+# [1.7.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.6.0...v1.7.0) (2026-03-06)
+
+
+### Features
+
+* **email:** split email into independent email_imap and email_smtp services ([e9bc657](https://github.com/stefanhoth/crusty-proxy/commit/e9bc657eee5574b84023a1a9cb9f31b993eb578a))
+
+# [1.6.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.5.1...v1.6.0) (2026-03-06)
+
+
+### Features
+
+* **health:** list full tool names per category in ?check, add ping() tests ([3a54f30](https://github.com/stefanhoth/crusty-proxy/commit/3a54f30e8918f75e5559d23afa2faa2c21022016))
+
+## [1.5.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.5.0...v1.5.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **logging:** structured log format for upstream tool counts and lists ([ad91384](https://github.com/stefanhoth/crusty-proxy/commit/ad91384d2ed0fc894aecd5daf2b1ebdb06daf923))
+
+# [1.5.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.1...v1.5.0) (2026-03-06)
+
+
+### Features
+
+* **health:** enrich ?check output and startup log with per-upstream tool counts ([b870577](https://github.com/stefanhoth/crusty-proxy/commit/b870577c3872094f9c04203c433871a81ffdc01e))
+
+## [1.4.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.4.0...v1.4.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **todoist:** update allowlist to real upstream tool names (26/27 enabled) ([808c8aa](https://github.com/stefanhoth/crusty-proxy/commit/808c8aaecdfcce0574e663d62594e9db72816064))
+
+# [1.4.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.3.1...v1.4.0) (2026-03-06)
+
+
+### Features
+
+* **health:** add ?check flag for live upstream reachability probes ([336632f](https://github.com/stefanhoth/crusty-proxy/commit/336632f290b6199324503a0b782f2a07fcfc9531))
+
+## [1.3.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.3.0...v1.3.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **logging:** align startup log with /health — show enabled state, include upstreams ([fce2bce](https://github.com/stefanhoth/crusty-proxy/commit/fce2bce24181c6b9d61bb6b8d8673ca5f7d08986))
+
+# [1.3.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.2.0...v1.3.0) (2026-03-06)
+
+
+### Features
+
+* **calendar:** replace Google Calendar OAuth2 with CalDAV/ICS via tsdav ([6a0e9c1](https://github.com/stefanhoth/crusty-proxy/commit/6a0e9c1c03d5c2ed5fcccd5870a26abaa2713cb9))
+
+# [1.2.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.6...v1.2.0) (2026-03-06)
+
+
+### Features
+
+* **gws:** add Google Workspace CLI as stdio upstream for Calendar and Gmail ([b1601cd](https://github.com/stefanhoth/crusty-proxy/commit/b1601cd6648019a0cb11caa4a2e638ab0e2f46ca))
+
+## [1.1.6](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.5...v1.1.6) (2026-03-06)
+
+
+### Bug Fixes
+
+* increase JSON body limit to 20mb for base64 image payloads ([0bc11cb](https://github.com/stefanhoth/crusty-proxy/commit/0bc11cbae065859d3a5877968e94fe21622bab01))
+
+## [1.1.5](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.4...v1.1.5) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** use camelCase inlineData/mimeType matching the API response format ([2351051](https://github.com/stefanhoth/crusty-proxy/commit/235105150ab032baa8611898e42a237536a8dceb))
+
+## [1.1.4](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.3...v1.1.4) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** log finishReason and parts when generate_image returns no images ([2b05a63](https://github.com/stefanhoth/crusty-proxy/commit/2b05a63cd14b3aa1295204183f39cfc29fc32f36))
+
+## [1.1.3](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.2...v1.1.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** align generate_image signature to gemini-2.5-flash-image API ([3a27893](https://github.com/stefanhoth/crusty-proxy/commit/3a27893d959a918d28b11353b363a19e2435e23c))
+
+## [1.1.2](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.1...v1.1.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** replace Imagen 3 predict endpoint with gemini-2.5-flash-image generateContent ([b347baf](https://github.com/stefanhoth/crusty-proxy/commit/b347baf56bb186e8a7208356f56fc4d046abbf4c))
+
+## [1.1.1](https://github.com/stefanhoth/crusty-proxy/compare/v1.1.0...v1.1.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **gemini:** upgrade edit_image model from gemini-2.0-flash-exp to gemini-2.5-flash-image ([5b8c8e2](https://github.com/stefanhoth/crusty-proxy/commit/5b8c8e2c85f9e47dfe377164613d90ab2adeab6c))
+
 # [1.1.0](https://github.com/stefanhoth/crusty-proxy/compare/v1.0.5...v1.1.0) (2026-03-05)
 
 

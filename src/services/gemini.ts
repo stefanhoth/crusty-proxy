@@ -5,8 +5,7 @@ import type { ImageContent } from "../types.js";
 
 type GeminiKeys = z.infer<typeof GeminiKeysSchema>;
 
-const IMAGEN_MODEL = "imagen-3.0-generate-001";
-const GEMINI_MODEL = "gemini-2.0-flash-exp";
+const IMAGE_MODEL = "gemini-2.5-flash-image";
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export class GeminiService {
@@ -14,16 +13,20 @@ export class GeminiService {
 
   async generateImage(args: {
     prompt: string;
-    aspect_ratio?: "1:1" | "9:16" | "16:9" | "4:3" | "3:4";
-    number_of_images?: number;
+    aspect_ratio?: string;
+    image_size?: string;
   }): Promise<{ text: string; images: ImageContent[] }> {
+    const imageConfig: Record<string, string> = {};
+    if (args.aspect_ratio) imageConfig.aspect_ratio = args.aspect_ratio;
+    if (args.image_size) imageConfig.image_size = args.image_size;
+
     const res = await axios.post(
-      `${BASE}/models/${IMAGEN_MODEL}:predict`,
+      `${BASE}/models/${IMAGE_MODEL}:generateContent`,
       {
-        instances: [{ prompt: args.prompt }],
-        parameters: {
-          aspectRatio: args.aspect_ratio ?? "1:1",
-          sampleCount: Math.min(args.number_of_images ?? 1, 4),
+        contents: [{ parts: [{ text: args.prompt }] }],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
         },
       },
       {
@@ -32,18 +35,24 @@ export class GeminiService {
       },
     );
 
-    const predictions: Array<{ bytesBase64Encoded: string; mimeType: string }> =
-      res.data.predictions ?? [];
+    const parts: Array<Record<string, unknown>> =
+      res.data.candidates?.[0]?.content?.parts ?? [];
 
-    if (predictions.length === 0) {
-      throw new Error("Imagen returned no images");
+    const images: ImageContent[] = parts
+      .filter((p) => p.inlineData)
+      .map((p) => {
+        const d = p.inlineData as { mimeType: string; data: string };
+        return { type: "image" as const, data: d.data, mimeType: d.mimeType };
+      });
+
+    if (images.length === 0) {
+      const candidate = res.data.candidates?.[0];
+      throw new Error(
+        `Gemini returned no images. finishReason=${candidate?.finishReason ?? "unknown"} ` +
+        `parts=${JSON.stringify(parts.map((p) => Object.keys(p)))} ` +
+        `promptFeedback=${JSON.stringify(res.data.promptFeedback ?? null)}`,
+      );
     }
-
-    const images: ImageContent[] = predictions.map((p) => ({
-      type: "image" as const,
-      data: p.bytesBase64Encoded,
-      mimeType: p.mimeType ?? "image/png",
-    }));
 
     return {
       text: `Generated ${images.length} image(s) for prompt: "${args.prompt}"`,
@@ -56,17 +65,16 @@ export class GeminiService {
     image_mime_type?: string;
     prompt: string;
   }): Promise<{ text: string; images: ImageContent[] }> {
-    // Use Gemini 2.0 Flash with image input + image output
     const res = await axios.post(
-      `${BASE}/models/${GEMINI_MODEL}:generateContent`,
+      `${BASE}/models/${IMAGE_MODEL}:generateContent`,
       {
         contents: [
           {
             role: "user",
             parts: [
               {
-                inline_data: {
-                  mime_type: args.image_mime_type ?? "image/png",
+                inlineData: {
+                  mimeType: args.image_mime_type ?? "image/png",
                   data: args.image_base64,
                 },
               },
@@ -88,10 +96,10 @@ export class GeminiService {
       res.data.candidates?.[0]?.content?.parts ?? [];
 
     const images: ImageContent[] = parts
-      .filter((p) => p.inline_data)
+      .filter((p) => p.inlineData)
       .map((p) => {
-        const d = p.inline_data as { mime_type: string; data: string };
-        return { type: "image" as const, data: d.data, mimeType: d.mime_type };
+        const d = p.inlineData as { mimeType: string; data: string };
+        return { type: "image" as const, data: d.data, mimeType: d.mimeType };
       });
 
     const textPart = parts.find((p) => typeof p.text === "string");

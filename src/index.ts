@@ -9,11 +9,14 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { loadKeys, loadAllowlist, isOperationAllowed } from "./config.js";
 import { CalendarService } from "./services/calendar.js";
-import { EmailService } from "./services/email.js";
+import { ImapService } from "./services/imap.js";
+import { SmtpService } from "./services/smtp.js";
 import { createTodoistUpstream } from "./services/todoist.js";
+import { GwsServiceBridge } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
-import { UpstreamMCPClient } from "./upstream.js";
+import type { UpstreamClient } from "./upstream/types.js";
+import { GWS_SERVICE_KEYS } from "./types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { Allowlist, Keys, ToolResult } from "./types.js";
 
@@ -41,23 +44,25 @@ try {
 
 // ── Local service instances (direct API wrappers) ────────────────────────────
 
-const calendar = keys.google_calendar ? new CalendarService(keys.google_calendar) : null;
-const email    = keys.email           ? new EmailService(keys.email)               : null;
-const places   = keys.google_places   ? new PlacesService(keys.google_places)      : null;
-const gemini   = keys.gemini          ? new GeminiService(keys.gemini)             : null;
+const calendar = keys.calendar    ? new CalendarService(keys.calendar)    : null;
+const imap     = keys.email_imap  ? new ImapService(keys.email_imap)      : null;
+const smtp     = keys.email_smtp  ? new SmtpService(keys.email_smtp)      : null;
+const places   = keys.google_places ? new PlacesService(keys.google_places) : null;
+const gemini   = keys.gemini      ? new GeminiService(keys.gemini)        : null;
 
-log.info("Services configured:", {
-  google_calendar: calendar !== null,
-  email:           email    !== null,
-  google_places:   places   !== null,
-  gemini:          gemini   !== null,
+log.info("Credentials loaded:", {
+  calendar:      calendar !== null,
+  email_imap:    imap     !== null,
+  email_smtp:    smtp     !== null,
+  google_places: places   !== null,
+  gemini:        gemini   !== null,
 });
 
 // ── Upstream MCP clients (official hosted MCP servers) ───────────────────────
 // Populated async in main() before the HTTP server starts.
 // Key = service name, Value = connected client with cached tool list.
 
-const upstreams = new Map<string, UpstreamMCPClient>();
+const upstreams = new Map<string, UpstreamClient>();
 
 async function initUpstreams(): Promise<void> {
   if (keys.todoist && allowlist.services.todoist?.enabled) {
@@ -69,12 +74,27 @@ async function initUpstreams(): Promise<void> {
     upstreams.set("todoist", client);
     log.info(`Todoist upstream connected — ${client.tools.length} tools available`);
   }
-  // Add future official MCP servers here (same pattern):
-  //   if (keys.someService && allowlist.services.someService?.enabled) {
-  //     const client = createSomeServiceUpstream(...);
-  //     await client.connect();
-  //     upstreams.set("someService", client);
-  //   }
+}
+
+// ── Google Workspace CLI bridges (one per enabled gws_* service) ─────────────
+// Synchronous — no async connect needed; each tool call spawns a short-lived
+// gws subprocess. Requires GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE to be set.
+
+const gwsBridges = new Map<string, GwsServiceBridge>();
+
+{
+  const credFile = process.env.GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE;
+  for (const key of GWS_SERVICE_KEYS) {
+    if (!allowlist.services[key]?.enabled) continue;
+    if (!credFile) {
+      log.warn(`${key} enabled in allowlist but GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE is not set — skipping`);
+      break; // one warning is enough
+    }
+    gwsBridges.set(key, new GwsServiceBridge(key));
+  }
+  if (gwsBridges.size > 0) {
+    log.info("gws bridges active:", [...gwsBridges.keys()]);
+  }
 }
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -82,12 +102,12 @@ async function initUpstreams(): Promise<void> {
 function buildTools(al: Allowlist): Tool[] {
   const tools: Tool[] = [];
 
-  if (al.services.google_calendar?.enabled) {
-    const ops = al.services.google_calendar.allowed_operations;
+  if (al.services.calendar?.enabled) {
+    const ops = al.services.calendar.allowed_operations;
     if (ops.includes("list_events")) {
       tools.push({
         name: "calendar.list_events",
-        description: "List Google Calendar events in a date range",
+        description: "List calendar events in a date range (CalDAV)",
         inputSchema: {
           type: "object",
           properties: {
@@ -103,11 +123,11 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("get_event")) {
       tools.push({
         name: "calendar.get_event",
-        description: "Get a specific Google Calendar event by ID",
+        description: "Get a specific calendar event by its UID (CalDAV)",
         inputSchema: {
           type: "object",
           properties: {
-            event_id: { type: "string", description: "The Google Calendar event ID" },
+            event_id: { type: "string", description: "The event UID (from list_events)" },
           },
           required: ["event_id"],
         },
@@ -116,7 +136,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("create_event")) {
       tools.push({
         name: "calendar.create_event",
-        description: "Create a new event in Google Calendar",
+        description: "Create a new event in the CalDAV calendar",
         inputSchema: {
           type: "object",
           properties: {
@@ -137,12 +157,19 @@ function buildTools(al: Allowlist): Tool[] {
     }
   }
 
-  if (al.services.email?.enabled) {
-    const ops = al.services.email.allowed_operations;
+  if (al.services.email_imap?.enabled) {
+    const ops = al.services.email_imap.allowed_operations;
+    if (ops.includes("list_folders")) {
+      tools.push({
+        name: "email_imap.list_folders",
+        description: "List all IMAP folders/mailboxes on the server",
+        inputSchema: { type: "object", properties: {} },
+      });
+    }
     if (ops.includes("list_messages")) {
       tools.push({
-        name: "email.list_messages",
-        description: "List email messages from IMAP inbox",
+        name: "email_imap.list_messages",
+        description: "List email messages from an IMAP mailbox",
         inputSchema: {
           type: "object",
           properties: {
@@ -155,8 +182,8 @@ function buildTools(al: Allowlist): Tool[] {
     }
     if (ops.includes("get_message")) {
       tools.push({
-        name: "email.get_message",
-        description: "Get the full content of an email by UID",
+        name: "email_imap.get_message",
+        description: "Get a parsed email by UID: decoded body as Markdown (HTML→MD or plain text fallback) plus attachment metadata",
         inputSchema: {
           type: "object",
           properties: {
@@ -167,9 +194,114 @@ function buildTools(al: Allowlist): Tool[] {
         },
       });
     }
+    if (ops.includes("get_attachment")) {
+      tools.push({
+        name: "email_imap.get_attachment",
+        description: "Download a specific attachment from an email. Text attachments are returned as UTF-8 strings; binary attachments (PDF, images, etc.) as base64.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            attachment_index: { type: "number", description: "Zero-based index from the attachments list in get_message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid", "attachment_index"],
+        },
+      });
+    }
+    if (ops.includes("move_message")) {
+      tools.push({
+        name: "email_imap.move_message",
+        description: "Move an email to a different folder",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            destination: { type: "string", description: "Destination folder path (e.g. 'Archive' or 'INBOX.Archive')" },
+            folder: { type: "string", description: "Source folder (default: INBOX)" },
+          },
+          required: ["uid", "destination"],
+        },
+      });
+    }
+    if (ops.includes("copy_message")) {
+      tools.push({
+        name: "email_imap.copy_message",
+        description: "Copy an email to another folder, leaving the original in place",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            destination: { type: "string", description: "Destination folder path" },
+            folder: { type: "string", description: "Source folder (default: INBOX)" },
+          },
+          required: ["uid", "destination"],
+        },
+      });
+    }
+    if (ops.includes("mark_read")) {
+      tools.push({
+        name: "email_imap.mark_read",
+        description: "Mark an email as read (sets \\Seen flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("mark_unread")) {
+      tools.push({
+        name: "email_imap.mark_unread",
+        description: "Mark an email as unread (removes \\Seen flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("flag_message")) {
+      tools.push({
+        name: "email_imap.flag_message",
+        description: "Star/flag an email (sets \\Flagged flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+    if (ops.includes("unflag_message")) {
+      tools.push({
+        name: "email_imap.unflag_message",
+        description: "Remove star/flag from an email (removes \\Flagged flag)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uid: { type: "number", description: "IMAP UID of the message" },
+            folder: { type: "string", description: "Mailbox folder (default: INBOX)" },
+          },
+          required: ["uid"],
+        },
+      });
+    }
+  }
+
+  if (al.services.email_smtp?.enabled) {
+    const ops = al.services.email_smtp.allowed_operations;
     if (ops.includes("send_message")) {
       tools.push({
-        name: "email.send_message",
+        name: "email_smtp.send_message",
         description: "Send an email via SMTP",
         inputSchema: {
           type: "object",
@@ -299,21 +431,20 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("generate_image")) {
       tools.push({
         name: "gemini.generate_image",
-        description: "Generate an image using Google Imagen 3",
+        description: "Generate an image using Gemini 2.5 Flash",
         inputSchema: {
           type: "object",
           properties: {
             prompt: { type: "string", description: "Image generation prompt" },
             aspect_ratio: {
               type: "string",
-              enum: ["1:1", "9:16", "16:9", "4:3", "3:4"],
+              enum: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"],
               description: "Image aspect ratio (default: 1:1)",
             },
-            number_of_images: {
-              type: "number",
-              description: "Number of images to generate (1-4, default: 1)",
-              minimum: 1,
-              maximum: 4,
+            image_size: {
+              type: "string",
+              enum: ["512px", "1K", "2K", "4K"],
+              description: "Output resolution (default: 1K). Use uppercase K.",
             },
           },
           required: ["prompt"],
@@ -323,7 +454,7 @@ function buildTools(al: Allowlist): Tool[] {
     if (ops.includes("edit_image")) {
       tools.push({
         name: "gemini.edit_image",
-        description: "Edit or transform an image using Gemini 2.0 Flash",
+        description: "Edit or transform an image using Gemini 2.5 Flash",
         inputSchema: {
           type: "object",
           properties: {
@@ -341,10 +472,42 @@ function buildTools(al: Allowlist): Tool[] {
     }
   }
 
-  // Upstream MCP tools — schemas come directly from the upstream server,
+  // Upstream MCP tools (e.g. Todoist) — schemas come from the upstream server,
   // already filtered to the allowlist. No maintenance required here.
   for (const client of upstreams.values()) {
     tools.push(...client.tools);
+  }
+
+  // gws per-service tools — one tool per allowed operation.
+  // Schema is generic: params (path/query flags) + body (request body).
+  // The LLM is expected to know the Google API field names from training data.
+  for (const [key, bridge] of gwsBridges) {
+    const svc = al.services[key as keyof typeof al.services];
+    if (!svc?.enabled) continue;
+    for (const op of svc.allowed_operations) {
+      const segments = op.split("_");
+      const apiMethod = `${bridge.gwsServiceName}.${segments.join(".")}`;
+      tools.push({
+        name: `${key}.${op}`,
+        description:
+          `Google Workspace API — ${apiMethod}. ` +
+          `Pass path/query parameters in 'params' (Google API camelCase, e.g. calendarId, maxResults, userId). ` +
+          `Pass request body for write operations in 'body' (Google API field names).`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            params: {
+              type: "object",
+              description: "Path and query parameters in Google API camelCase (e.g. {\"calendarId\": \"primary\", \"maxResults\": 10}).",
+            },
+            body: {
+              type: "object",
+              description: "Request body for write operations (insert/update/patch/create). Uses Google API field names.",
+            },
+          },
+        },
+      });
+    }
   }
 
   return tools;
@@ -364,38 +527,80 @@ async function handleToolCall(
 
   log.info(`Tool call: ${name}`);
   try {
-    // Google Calendar
+    // CalDAV calendar
     if (name === "calendar.list_events") {
-      if (!isOperationAllowed(al, "google_calendar", "list_events")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "list_events")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.listEvents(args as Parameters<typeof calendar.listEvents>[0]) }] };
     }
     if (name === "calendar.get_event") {
-      if (!isOperationAllowed(al, "google_calendar", "get_event")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "get_event")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.getEvent(args as Parameters<typeof calendar.getEvent>[0]) }] };
     }
     if (name === "calendar.create_event") {
-      if (!isOperationAllowed(al, "google_calendar", "create_event")) return err("Operation not allowed");
-      if (!calendar) return err("Google Calendar not configured");
+      if (!isOperationAllowed(al, "calendar", "create_event")) return err("Operation not allowed");
+      if (!calendar) return err("CalDAV calendar not configured");
       return { content: [{ type: "text", text: await calendar.createEvent(args as Parameters<typeof calendar.createEvent>[0]) }] };
     }
 
-    // Email
-    if (name === "email.list_messages") {
-      if (!isOperationAllowed(al, "email", "list_messages")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.listMessages(args as Parameters<typeof email.listMessages>[0]) }] };
+    // IMAP
+    if (name === "email_imap.list_folders") {
+      if (!isOperationAllowed(al, "email_imap", "list_folders")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.listFolders() }] };
     }
-    if (name === "email.get_message") {
-      if (!isOperationAllowed(al, "email", "get_message")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.getMessage(args as Parameters<typeof email.getMessage>[0]) }] };
+    if (name === "email_imap.list_messages") {
+      if (!isOperationAllowed(al, "email_imap", "list_messages")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.listMessages(args as Parameters<typeof imap.listMessages>[0]) }] };
     }
-    if (name === "email.send_message") {
-      if (!isOperationAllowed(al, "email", "send_message")) return err("Operation not allowed");
-      if (!email) return err("Email not configured");
-      return { content: [{ type: "text", text: await email.sendMessage(args as Parameters<typeof email.sendMessage>[0]) }] };
+    if (name === "email_imap.get_message") {
+      if (!isOperationAllowed(al, "email_imap", "get_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.getMessage(args as Parameters<typeof imap.getMessage>[0]) }] };
+    }
+    if (name === "email_imap.get_attachment") {
+      if (!isOperationAllowed(al, "email_imap", "get_attachment")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.getAttachment(args as Parameters<typeof imap.getAttachment>[0]) }] };
+    }
+    if (name === "email_imap.move_message") {
+      if (!isOperationAllowed(al, "email_imap", "move_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.moveMessage(args as Parameters<typeof imap.moveMessage>[0]) }] };
+    }
+    if (name === "email_imap.copy_message") {
+      if (!isOperationAllowed(al, "email_imap", "copy_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.copyMessage(args as Parameters<typeof imap.copyMessage>[0]) }] };
+    }
+    if (name === "email_imap.mark_read") {
+      if (!isOperationAllowed(al, "email_imap", "mark_read")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.markRead(args as Parameters<typeof imap.markRead>[0]) }] };
+    }
+    if (name === "email_imap.mark_unread") {
+      if (!isOperationAllowed(al, "email_imap", "mark_unread")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.markUnread(args as Parameters<typeof imap.markUnread>[0]) }] };
+    }
+    if (name === "email_imap.flag_message") {
+      if (!isOperationAllowed(al, "email_imap", "flag_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.flagMessage(args as Parameters<typeof imap.flagMessage>[0]) }] };
+    }
+    if (name === "email_imap.unflag_message") {
+      if (!isOperationAllowed(al, "email_imap", "unflag_message")) return err("Operation not allowed");
+      if (!imap) return err("IMAP not configured");
+      return { content: [{ type: "text", text: await imap.unflagMessage(args as Parameters<typeof imap.unflagMessage>[0]) }] };
+    }
+
+    // SMTP
+    if (name === "email_smtp.send_message") {
+      if (!isOperationAllowed(al, "email_smtp", "send_message")) return err("Operation not allowed");
+      if (!smtp) return err("SMTP not configured");
+      return { content: [{ type: "text", text: await smtp.sendMessage(args as Parameters<typeof smtp.sendMessage>[0]) }] };
     }
 
     // Places (via goplaces CLI)
@@ -449,6 +654,16 @@ async function handleToolCall(
       };
     }
 
+    // gws per-service tools: "gws_calendar.events_list", "gws_gmail.users_messages_list", …
+    for (const key of GWS_SERVICE_KEYS) {
+      if (!name.startsWith(`${key}.`)) continue;
+      const op = name.slice(key.length + 1);
+      if (!isOperationAllowed(al, key, op)) return err("Operation not allowed");
+      const bridge = gwsBridges.get(key);
+      if (!bridge) return err(`gws service ${key} not active (credentials missing or service disabled)`);
+      return bridge.call(op, args);
+    }
+
     // Upstream MCP tools (e.g. Todoist official MCP) — route by tool ownership
     for (const [, client] of upstreams) {
       if (client.owns(name)) {
@@ -489,7 +704,7 @@ function createServer(): Server {
 // ── HTTP/SSE Express app ──────────────────────────────────────────────────────
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "20mb" }));
 
 const transports = new Map<string, SSEServerTransport>();
 
@@ -527,18 +742,37 @@ app.post("/mcp", async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (req, res) => {
+  const deep = "check" in req.query;
+
+  const checks: Record<string, boolean> | undefined = deep
+    ? Object.fromEntries(
+        await Promise.all(
+          [...upstreams.entries()].map(async ([name, client]) => [name, await client.ping()]),
+        ),
+      )
+    : undefined;
+
+  const gwsServiceStatus = Object.fromEntries(
+    GWS_SERVICE_KEYS
+      .filter((k) => allowlist.services[k]?.enabled)
+      .map((k) => [k, gwsBridges.has(k)] as const),
+  );
+
   res.json({
     status: "ok",
     version,
     services: {
-      google_calendar: calendar !== null && (allowlist.services.google_calendar?.enabled ?? false),
-      email: email !== null && (allowlist.services.email?.enabled ?? false),
+      calendar:   calendar !== null && (allowlist.services.calendar?.enabled ?? false),
+      email_imap: imap     !== null && (allowlist.services.email_imap?.enabled ?? false),
+      email_smtp: smtp     !== null && (allowlist.services.email_smtp?.enabled ?? false),
       todoist: upstreams.has("todoist"),
       google_places: places !== null && (allowlist.services.google_places?.enabled ?? false),
       gemini: gemini !== null && (allowlist.services.gemini?.enabled ?? false),
+      ...gwsServiceStatus,
     },
     upstream_services: [...upstreams.keys()],
+    ...(checks !== undefined && { checks }),
     tools: buildTools(allowlist).length,
   });
 });
@@ -549,6 +783,16 @@ async function main(): Promise<void> {
   // Connect upstream MCP servers before accepting traffic — tool list must
   // be populated before OpenClaw connects and calls ListTools.
   await initUpstreams();
+
+  log.info("Services active:", {
+    calendar:      calendar !== null && (allowlist.services.calendar?.enabled ?? false),
+    email_imap:    imap     !== null && (allowlist.services.email_imap?.enabled ?? false),
+    email_smtp:    smtp     !== null && (allowlist.services.email_smtp?.enabled ?? false),
+    google_places: places   !== null && (allowlist.services.google_places?.enabled ?? false),
+    gemini:        gemini   !== null && (allowlist.services.gemini?.enabled ?? false),
+    todoist:       upstreams.has("todoist"),
+    gws_bridges:   [...gwsBridges.keys()],
+  });
 
   const PORT = parseInt(process.env.PORT ?? "3000", 10);
   app.listen(PORT, "0.0.0.0", () => {

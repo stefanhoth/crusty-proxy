@@ -42,6 +42,17 @@
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "steipete/goplaces",
       "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Dockerfile/"
+      ],
+      "matchStrings": [
+        "npm install -g @googleworkspace/cli@(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "@googleworkspace/cli",
+      "datasourceTemplate": "npm"
     }
   ]
 }

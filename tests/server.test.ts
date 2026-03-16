@@ -53,8 +53,9 @@ describe("server integration", () => {
     const body = (await res.json()) as Record<string, unknown>;
     expect(body.status).toBe("ok");
     expect(body.services).toEqual({
-      google_calendar: false,
-      email: false,
+      calendar: false,
+      email_imap: false,
+      email_smtp: false,
       todoist: false,
       google_places: false,
       gemini: false,

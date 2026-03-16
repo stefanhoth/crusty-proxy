@@ -2,28 +2,29 @@ import { z } from "zod";
 
 // ── Config schemas ──────────────────────────────────────────────────────────
 
-export const GoogleCalendarKeysSchema = z.object({
-  client_id: z.string(),
-  client_secret: z.string(),
-  refresh_token: z.string(),
-  calendar_id: z.string().default("primary"),
+export const CalDavKeysSchema = z.object({
+  /** CalDAV server URL, e.g. https://caldav.fastmail.com/dav/ */
+  caldav_url: z.string().url(),
+  username: z.string(),
+  password: z.string(),
+  /** Optional specific calendar URL — if omitted, the first discovered calendar is used */
+  calendar_url: z.string().url().optional(),
 });
 
-export const EmailKeysSchema = z.object({
-  imap: z.object({
-    host: z.string(),
-    port: z.number().int().positive(),
-    tls: z.boolean().default(true),
-    username: z.string(),
-    password: z.string(),
-  }),
-  smtp: z.object({
-    host: z.string(),
-    port: z.number().int().positive(),
-    secure: z.boolean().default(false),
-    username: z.string(),
-    password: z.string(),
-  }),
+export const ImapKeysSchema = z.object({
+  host: z.string(),
+  port: z.number().int().positive(),
+  tls: z.boolean().default(true),
+  username: z.string(),
+  password: z.string(),
+});
+
+export const SmtpKeysSchema = z.object({
+  host: z.string(),
+  port: z.number().int().positive(),
+  secure: z.boolean().default(false),
+  username: z.string(),
+  password: z.string(),
 });
 
 export const TodoistKeysSchema = z.object({
@@ -42,8 +43,9 @@ export const GeminiKeysSchema = z.object({
 });
 
 export const KeysSchema = z.object({
-  google_calendar: GoogleCalendarKeysSchema.optional(),
-  email: EmailKeysSchema.optional(),
+  calendar: CalDavKeysSchema.optional(),
+  email_imap: ImapKeysSchema.optional(),
+  email_smtp: SmtpKeysSchema.optional(),
   todoist: TodoistKeysSchema.optional(),
   google_places: GooglePlacesKeysSchema.optional(),
   gemini: GeminiKeysSchema.optional(),
@@ -56,14 +58,34 @@ export const ServiceAllowlistSchema = z.object({
 
 export const AllowlistSchema = z.object({
   services: z.object({
-    google_calendar: ServiceAllowlistSchema.optional(),
-    email: ServiceAllowlistSchema.optional(),
+    // Direct API services (own credentials in keys.json)
+    calendar: ServiceAllowlistSchema.optional(),
+    email_imap: ServiceAllowlistSchema.optional(),
+    email_smtp: ServiceAllowlistSchema.optional(),
     todoist: ServiceAllowlistSchema.optional(),
     google_places: ServiceAllowlistSchema.optional(),
     gemini: ServiceAllowlistSchema.optional(),
+    // Google Workspace CLI (gws) — per-service enable/disable
+    // Credentials: GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE env var
+    gws_calendar: ServiceAllowlistSchema.optional(),
+    gws_gmail: ServiceAllowlistSchema.optional(),
+    gws_drive: ServiceAllowlistSchema.optional(),
+    gws_docs: ServiceAllowlistSchema.optional(),
+    gws_sheets: ServiceAllowlistSchema.optional(),
+    gws_tasks: ServiceAllowlistSchema.optional(),
+    gws_chat: ServiceAllowlistSchema.optional(),
   }),
 });
 
+/** All gws_* service keys — one GwsServiceBridge instance is created per enabled entry. */
+export const GWS_SERVICE_KEYS = [
+  "gws_calendar", "gws_gmail", "gws_drive", "gws_docs",
+  "gws_sheets", "gws_tasks", "gws_chat",
+] as const satisfies ReadonlyArray<keyof z.infer<typeof AllowlistSchema>["services"]>;
+
+export type CalDavKeys = z.infer<typeof CalDavKeysSchema>;
+export type ImapKeys = z.infer<typeof ImapKeysSchema>;
+export type SmtpKeys = z.infer<typeof SmtpKeysSchema>;
 export type Keys = z.infer<typeof KeysSchema>;
 export type Allowlist = z.infer<typeof AllowlistSchema>;
 
