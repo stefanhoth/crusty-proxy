@@ -77,7 +77,7 @@ export const AllowlistSchema = z.object({
   }),
 });
 
-/** All gws_* service keys — used to aggregate ops for the stdio client. */
+/** All gws_* service keys — one GwsServiceBridge instance is created per enabled entry. */
 export const GWS_SERVICE_KEYS = [
   "gws_calendar", "gws_gmail", "gws_drive", "gws_docs",
   "gws_sheets", "gws_tasks", "gws_chat",
