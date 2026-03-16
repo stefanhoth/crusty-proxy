@@ -139,3 +139,17 @@ describe("GwsServiceBridge.call() — error surface", () => {
     expect(typeof (result.content[0] as { type: "text"; text: string }).text).toBe("string");
   });
 });
+
+describe("GwsServiceBridge.authStatus() — contract", () => {
+  it("never throws: returns null when gws is absent, or a status object when it is present", async () => {
+    const bridge = new GwsServiceBridge("gws_calendar");
+    const result = await bridge.authStatus();
+    // Either gws is not installed (null) or it is (object with token_valid bool).
+    // The key invariant is no exception is thrown.
+    if (result !== null) {
+      // auth_method is always present regardless of credential state
+      expect(typeof result.auth_method).toBe("string");
+    }
+    expect(true).toBe(true); // reached without throwing
+  });
+});

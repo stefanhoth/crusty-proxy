@@ -63,6 +63,15 @@ describe("server integration", () => {
     expect(body.tools).toBe(0);
   });
 
+  it("GET /health?check omits gws_auth when no gws bridges are active", async () => {
+    const res = await fetch(`http://localhost:${PORT}/health?check`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.status).toBe("ok");
+    // No gws services enabled in test fixtures → gwsAuthStatus stays null → field absent
+    expect(body.gws_auth).toBeUndefined();
+  });
+
   it("returns SSE headers on GET /sse", async () => {
     const controller = new AbortController();
     const res = await fetch(`http://localhost:${PORT}/sse`, {
