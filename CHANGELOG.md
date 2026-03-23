@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.2.0...v2.2.1) (2026-03-23)
+
+
+### Bug Fixes
+
+* **gws:** handle expired/unreadable auth in health?check and interface ([35ae0d5](https://github.com/stefanhoth/crusty-proxy/commit/35ae0d5521263b0ef9a1da4e8495d7a4f579f7d2))
+
 # [2.2.0](https://github.com/stefanhoth/crusty-proxy/compare/v2.1.0...v2.2.0) (2026-03-16)
 
 
