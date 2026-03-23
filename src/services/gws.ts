@@ -3,18 +3,35 @@ import { promisify } from "util";
 import type { ToolResult } from "../types.js";
 
 export interface GwsAuthStatus {
-  token_valid: boolean;
+  token_valid?: boolean;           // absent when auth is broken / token cache missing
+  token_cache_exists?: boolean;    // false when no cached token exists
+  credentials_readable?: boolean;  // false when credentials file can't be read
+  plain_credentials_exists?: boolean;
   user?: string;
   auth_method?: string;
   storage?: string;
   scope_count?: number;
   scopes?: string[];
-  plain_credentials_exists?: boolean;
   has_refresh_token?: boolean;
   credential_source?: string;
 }
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Returns true only when all three health signals are clearly positive.
+ * A missing field (undefined) is treated as healthy for token_valid but
+ * as unhealthy for the other two, matching gws behaviour:
+ *  - token_valid is absent when auth is broken (treat absent as false)
+ *  - token_cache_exists / credentials_readable are absent when healthy
+ */
+export function isGwsAuthHealthy(status: GwsAuthStatus): boolean {
+  return (
+    status.token_valid === true &&
+    status.token_cache_exists !== false &&
+    status.credentials_readable !== false
+  );
+}
 
 /**
  * Convert a camelCase parameter key to a --kebab-case CLI flag.
