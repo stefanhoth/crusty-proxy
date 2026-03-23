@@ -12,7 +12,7 @@ import { CalendarService } from "./services/calendar.js";
 import { ImapService } from "./services/imap.js";
 import { SmtpService } from "./services/smtp.js";
 import { createTodoistUpstream } from "./services/todoist.js";
-import { GwsServiceBridge, type GwsAuthStatus } from "./services/gws.js";
+import { GwsServiceBridge, isGwsAuthHealthy, type GwsAuthStatus } from "./services/gws.js";
 import { PlacesService } from "./services/places.js";
 import { GeminiService } from "./services/gemini.js";
 import type { UpstreamClient } from "./upstream/types.js";
@@ -770,12 +770,23 @@ app.post("/mcp", async (req, res) => {
 app.get("/health", async (req, res) => {
   const deep = "check" in req.query;
 
+  // For deep checks: run a fresh gws auth status (cached startup value may be stale).
+  const freshGwsAuth = deep && gwsBridges.size > 0
+    ? await (gwsBridges.values().next().value as GwsServiceBridge).authStatus()
+    : null;
+  const activeGwsAuth = freshGwsAuth ?? gwsAuthStatus;
+
+  const gwsAuthOk = activeGwsAuth !== null ? isGwsAuthHealthy(activeGwsAuth) : null;
+
   const checks: Record<string, boolean> | undefined = deep
-    ? Object.fromEntries(
-        await Promise.all(
-          [...upstreams.entries()].map(async ([name, client]) => [name, await client.ping()]),
+    ? {
+        ...Object.fromEntries(
+          await Promise.all(
+            [...upstreams.entries()].map(async ([name, client]) => [name, await client.ping()]),
+          ),
         ),
-      )
+        ...(gwsAuthOk !== null && { gws_auth: gwsAuthOk }),
+      }
     : undefined;
 
   const gwsServiceStatus = Object.fromEntries(
@@ -798,7 +809,7 @@ app.get("/health", async (req, res) => {
     },
     upstream_services: [...upstreams.keys()],
     ...(checks !== undefined && { checks }),
-    ...(deep && gwsAuthStatus !== null && { gws_auth: gwsAuthStatus }),
+    ...(deep && activeGwsAuth !== null && { gws_auth: activeGwsAuth }),
     tools: buildTools(allowlist).length,
   });
 });
@@ -823,8 +834,14 @@ async function main(): Promise<void> {
         scope_count: gwsAuthStatus.scope_count,
         scopes:      gwsAuthStatus.scopes,
       });
-      if (!gwsAuthStatus.token_valid) {
-        log.warn("gws: token is NOT valid — tool calls will fail until credentials are refreshed");
+      if (gwsAuthStatus.token_valid !== true ||
+          gwsAuthStatus.token_cache_exists === false ||
+          gwsAuthStatus.credentials_readable === false) {
+        log.warn("gws: auth is NOT healthy — tool calls will fail until credentials are refreshed", {
+          token_valid:         gwsAuthStatus.token_valid,
+          token_cache_exists:  gwsAuthStatus.token_cache_exists,
+          credentials_readable: gwsAuthStatus.credentials_readable,
+        });
       }
     } else {
       log.warn("gws: auth status check failed (gws binary missing or credentials unreadable)");
