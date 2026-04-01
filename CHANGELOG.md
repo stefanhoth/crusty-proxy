@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/stefanhoth/crusty-proxy/compare/v2.2.2...v2.3.0) (2026-04-01)
+
+
+### Features
+
+* **deps:** update dependency @googleworkspace/cli to v0.22.5 ([#20](https://github.com/stefanhoth/crusty-proxy/issues/20)) ([5b5c4ac](https://github.com/stefanhoth/crusty-proxy/commit/5b5c4acec2ab0460f1764049fa7bb1bf191295ae))
+
 ## [2.2.2](https://github.com/stefanhoth/crusty-proxy/compare/v2.2.1...v2.2.2) (2026-04-01)
 
 ## [2.2.1](https://github.com/stefanhoth/crusty-proxy/compare/v2.2.0...v2.2.1) (2026-03-23)
