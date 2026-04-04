@@ -25,7 +25,7 @@
     "@types/bun": "latest",
     "@types/express": "^5.0.0",
     "@types/mailparser": "^3.4.6",
-    "@types/nodemailer": "^7.0.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/turndown": "^5.0.6",
     "typescript": "^6.0.0"
   }
