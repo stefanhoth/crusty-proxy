@@ -1,3 +1,5 @@
+## [2.3.6](https://github.com/stefanhoth/crusty-proxy/compare/v2.3.5...v2.3.6) (2026-06-21)
+
 ## [2.3.5](https://github.com/stefanhoth/crusty-proxy/compare/v2.3.4...v2.3.5) (2026-06-18)
 
 
