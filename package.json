@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "axios": "^1.7.9",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "axios": "^1.18.0",
     "express": "^5.0.0",
     "imapflow": "^1.0.169",
     "mailparser": "^3.9.3",
