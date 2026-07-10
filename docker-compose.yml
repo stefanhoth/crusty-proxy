@@ -16,7 +16,7 @@ services:
     cap_drop:
       - ALL
 
-    # Config files mounted read-only — OpenClaw has NO access to these paths
+    # Config files mounted read-only — the MCP client has NO access to these paths
     volumes:
       - type: bind
         source: ./config/keys.json
