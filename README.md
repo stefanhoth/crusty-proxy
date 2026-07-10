@@ -55,13 +55,14 @@ docker network create openclaw-internal   # shared network the proxy and your ag
 docker compose up -d
 ```
 
-Point your MCP client at `http://crusty-proxy:3000/mcp` (from a container on the same network). For a production setup with a dedicated system user, locked-down file permissions, and health checks, follow [docs/deployment.md](docs/deployment.md).
+Point your MCP client at `http://crusty-proxy:3000/mcp` (from a container on the same network). [docs/deployment.md](docs/deployment.md) walks through this setup with a few good-to-know hints; if an autonomous agent runs on the same host, consider the [hardened deployment](docs/deployment-hardened.md) with a dedicated system user and locked-down file permissions.
 
 ## Documentation
 
 | Doc | Contents |
 |-----|----------|
-| [docs/deployment.md](docs/deployment.md) | Hardened first-time setup on a VPS: system user, file permissions, Docker network, health checks |
+| [docs/deployment.md](docs/deployment.md) | Straightforward Docker Compose deployment, plus good-to-know hints |
+| [docs/deployment-hardened.md](docs/deployment-hardened.md) | Maximum-isolation setup on a VPS: dedicated system user, file permissions, health checks |
 | [docs/services.md](docs/services.md) | Per-service credential setup, the operations allowlist, and the full list of available tools |
 | [docs/clients.md](docs/clients.md) | Connecting MCP clients — generic clients, mcporter, and OpenClaw specifically |
 | [docs/architecture.md](docs/architecture.md) | System overview, request flow, integration patterns, security model, source layout |

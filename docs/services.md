@@ -1,6 +1,6 @@
 # Services — credentials, allowlist, and available tools
 
-Every service is opt-in: it needs credentials in `keys.json` **and** `"enabled": true` in `allowlist.json`. Paths below assume the [VPS deployment](deployment.md) layout (`/opt/mcp-proxy/config/`); adjust for your setup.
+Every service is opt-in: it needs credentials in `keys.json` **and** `"enabled": true` in `allowlist.json`. Paths below assume the [hardened VPS deployment](deployment-hardened.md) layout (`/opt/mcp-proxy/config/`); adjust for your setup — with the [simple deployment](deployment.md), the files live in your compose directory under `config/` and no `sudo -u crusty` is needed.
 
 ## Service credentials
 
