@@ -6,7 +6,7 @@
 graph TD
     subgraph VPS["VPS host"]
         subgraph net["Docker network: openclaw-internal"]
-            OC["OpenClaw\n(AI agent)"]
+            OC["MCP client\n(e.g. OpenClaw)"]
             CP["crusty-proxy\n:3000"]
         end
         OC -->|"MCP/SSE or HTTP\nhttp://crusty-proxy:3000"| CP
@@ -20,7 +20,7 @@ graph TD
     CP -->|"HTTPS"| GEM["Gemini / Imagen API"]
 ```
 
-OpenClaw never touches external APIs or credentials directly. crusty-proxy is the only egress point.
+The MCP client (an AI agent such as OpenClaw, or any other MCP-speaking workload) never touches external APIs or credentials directly. crusty-proxy is the only egress point.
 
 ---
 
@@ -28,7 +28,7 @@ OpenClaw never touches external APIs or credentials directly. crusty-proxy is th
 
 ```mermaid
 sequenceDiagram
-    participant OC as OpenClaw
+    participant OC as MCP client
     participant CP as crusty-proxy
     participant AL as Allowlist check
     participant SVC as Backend service
@@ -114,11 +114,11 @@ graph TD
 ```
 
 What this enforces:
-- **OpenClaw has no credentials** — it can only call tools the proxy exposes
+- **The MCP client has no credentials** — it can only call tools the proxy exposes
 - **The proxy cannot modify its own config** — bind-mounts are read-only
 - **Deleted operations stay gone** — allowlist is re-read at startup, not cached per-call
 
-What this does *not* prevent: a compromised OpenClaw using the tools that are permitted (sending email, creating events, etc.).
+What this does *not* prevent: a compromised client using the tools that are permitted (sending email, creating events, etc.).
 
 ---
 
