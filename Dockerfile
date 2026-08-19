@@ -1,5 +1,5 @@
 # ── goplaces binary ───────────────────────────────────────────────────────────
-FROM golang:1.26-alpine AS goplaces-builder
+FROM golang:1.27-alpine AS goplaces-builder
 RUN go install github.com/steipete/goplaces/cmd/goplaces@v0.4.0
 
 # ── Production stage ──────────────────────────────────────────────────────────
