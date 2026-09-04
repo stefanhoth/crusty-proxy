@@ -16,7 +16,7 @@
     "express": "^5.2.1",
     "imapflow": "^1.4.2",
     "mailparser": "^3.9.11",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^10.0.0",
     "tsdav": "^2.2.2",
     "turndown": "^7.2.4",
     "zod": "^4.4.3"
