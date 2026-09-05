@@ -3,7 +3,7 @@
   "version": "2.3.6",
   "description": "MCP proxy server - credential-isolating security layer between AI agents and external APIs",
   "type": "module",
-  "packageManager": "bun@1.3.10",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
