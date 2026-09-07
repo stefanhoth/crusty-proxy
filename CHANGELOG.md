@@ -1,3 +1,10 @@
+## [2.3.8](https://github.com/stefanhoth/crusty-proxy/compare/v2.3.7...v2.3.8) (2026-09-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency imapflow to v2 ([#34](https://github.com/stefanhoth/crusty-proxy/issues/34)) ([bc90f49](https://github.com/stefanhoth/crusty-proxy/commit/bc90f495c723fc539e346c029d55606b8ad6ca4a))
+
 ## [2.3.7](https://github.com/stefanhoth/crusty-proxy/compare/v2.3.6...v2.3.7) (2026-09-07)
 
 
