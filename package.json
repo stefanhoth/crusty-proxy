@@ -14,7 +14,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.18.0",
     "express": "^5.2.1",
-    "imapflow": "^1.4.2",
+    "imapflow": "^2.0.0",
     "mailparser": "^3.9.11",
     "nodemailer": "^10.0.0",
     "tsdav": "^2.2.2",
