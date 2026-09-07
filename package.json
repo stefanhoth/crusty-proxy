@@ -1,6 +1,6 @@
 {
   "name": "crusty-proxy",
-  "version": "2.3.10",
+  "version": "2.3.11",
   "description": "MCP proxy server - credential-isolating security layer between AI agents and external APIs",
   "type": "module",
   "packageManager": "bun@1.4.2",
