@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: cycjimmy/semantic-release-action@v6
+      - uses: cycjimmy/semantic-release-action@v7.1.2
         id: release
         with:
           extra_plugins: |
